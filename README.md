@@ -67,7 +67,7 @@ public class KuaiWebApplication {
 
 
 ## 调用查询接口
-Kapi 生成的接口地址为 `http://ip/项目名称/middle/别名/接口类型` ,如 `http://127.0.0.1/xxxx/middle/PureAdminUser/getList`, 其中别名对应@KApi 注解中的alias字段,接口类型则指定增删查改操作，详细参考 [接口调用规范](./apiparam.md)
+Kapi 生成的接口地址为 `http://ip/项目名称/middle/别名/接口类型` ,如 `http://127.0.0.1/xxxx/middle/PureAdminUser/getList`, 其中别名对应@KApi 注解中的alias字段,接口类型则指定增删查改操作，详细参考 [接口调用规范](http://kuai.lxycx.cn/docs/kuai/started.html)
 
 ### 请求实例
 ```javascript
