@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="cn.lxycx.kuaicore.mapper.InterfaceMapper">
+    <update id="createConfTable" databaseId="oracle">
+        create table KUAI_INTERFACE_CONF
+        (
+            ID        VARCHAR2(32) default sys_guid() not null,
+            TABLES    NVARCHAR2(2000),
+            TABLETYPE NVARCHAR2(10),
+            ALIAS     VARCHAR2(200) unique,
+            REMARK    NVARCHAR2(100),
+            CLASSIFY  NVARCHAR2(32),
+            KEYS      NVARCHAR2(2000),
+            SETVALUE  NVARCHAR2(500),
+            VERIFY    NVARCHAR2(2000),
+            ROLES     NVARCHAR2(100),
+            FIELD     NVARCHAR2(500),
+            WHERES    NVARCHAR2(500),
+            ISCX      VARCHAR2(10) default 0,
+            ISXG      VARCHAR2(10) default 0,
+            ISSC      VARCHAR2(10) default 0,
+            AFTER     NVARCHAR2(2000),
+            FRONT     NVARCHAR2(2000),
+            LISTCONF  NVARCHAR2(2000),
+            FORMCONF  NVARCHAR2(2000),
+            STATE     VARCHAR2(1)  default 0,
+            ADDTIME   DATE         default sysdate
+        )
+    </update>
+
+    <!--备份-->
+    <update id="backConfTable">
+        create table ${table} as select * from KUAI_INTERFACE_CONF
+    </update>
+
+
+    <select id="findTables" resultType="java.util.Map" databaseId="oracle">
+        select table_name,table_type,comments remark from user_tab_comments order by table_type
+    </select>
+
+
+    <select id="findColumns" resultType="java.util.Map" databaseId="oracle">
+        SELECT column_name,DATA_TYPE,data_length FROM user_tab_columns where table_name = upper(#{tableName}) order by column_id
+    </select>
+
+
+    <insert id="addIFConfig" databaseId="oracle">
+        insert into KUAI_INTERFACE_CONF(tables,tabletype,alias,classify,remark,keys,verify,roles,field,wheres, iscx, isxg, issc, after, front, state)
+        values(#{tables,jdbcType=VARCHAR},#{tabletype,jdbcType=VARCHAR},#{alias,jdbcType=VARCHAR}
+        ,#{classify,jdbcType=VARCHAR},#{remark,jdbcType=VARCHAR},#{keys,jdbcType=VARCHAR},
+        #{verify,jdbcType=VARCHAR},#{roles,jdbcType=VARCHAR},#{field,jdbcType=VARCHAR},#{wheres,jdbcType=VARCHAR}
+        ,#{iscx,jdbcType=VARCHAR},#{isxg,jdbcType=VARCHAR},#{issc,jdbcType=VARCHAR},#{after,jdbcType=VARCHAR},#{front,jdbcType=VARCHAR},1)
+    </insert>
+    <insert id="batchAddIFConfig" databaseId="oracle">
+        insert into KUAI_INTERFACE_CONF(tables,tabletype,alias,classify,remark,keys,verify,roles,field,wheres, iscx, isxg, issc, after, front, state)
+        values(#{tables,jdbcType=VARCHAR},#{tabletype,jdbcType=VARCHAR},#{alias,jdbcType=VARCHAR}
+        ,#{classify,jdbcType=VARCHAR},#{remark,jdbcType=VARCHAR},#{keys,jdbcType=VARCHAR},
+        #{verify,jdbcType=VARCHAR},#{roles,jdbcType=VARCHAR},#{field,jdbcType=VARCHAR},#{wheres,jdbcType=VARCHAR}
+        ,#{iscx,jdbcType=VARCHAR},#{isxg,jdbcType=VARCHAR},#{issc,jdbcType=VARCHAR},#{after,jdbcType=VARCHAR},#{front,jdbcType=VARCHAR},1)
+    </insert>
+
+    <update id="updateIFConfig" databaseId="oracle">
+        update KUAI_INTERFACE_CONF
+        <set>
+            <foreach collection="maps.keys" item="k" separator=",">
+                ${k}=#{maps[${k}],jdbcType=VARCHAR}
+            </foreach>
+        </set>
+
+        where ID = #{id,jdbcType=VARCHAR}
+    </update>
+
+
+    <select id="findIFConfigList" resultType="cn.lxycx.kuaicore.bean.InterfaceConf">
+        select * from KUAI_INTERFACE_CONF
+        <where>
+            <if test="state!=null">
+                and STATE = #{state}
+            </if>
+            <if test="classify!=null">
+                and CLASSIFY = #{classify,jdbcType=VARCHAR}
+            </if>
+            <if test="alias!=null">
+                and alias = #{alias,jdbcType=VARCHAR}
+            </if>
+
+        </where>
+
+        order by STATE desc,CLASSIFY,addtime
+    </select>
+
+</mapper>

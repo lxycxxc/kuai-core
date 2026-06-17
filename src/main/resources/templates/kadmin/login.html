@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <!-- import CSS -->
+    <base href="../../">
+    <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
+    <script src="js/vue.js"></script>
+    <!-- import JavaScript -->
+    <script src="js/index.js"></script>
+    <script src="js/jquery-1.11.0.js"></script>
+    <style>
+
+        .el-main{ width: 500px;margin: auto }
+    </style>
+</head>
+<body>
+<div id="app">
+    <el-container>
+        <el-header></el-header>
+        <el-main >
+            <div style="font-size: 25px;text-align: center;margin-bottom: 20px;">登录</div>
+            <el-form :model="addData" ref="form"  label-width="50px" >
+                <el-form-item label="账号" prop="eleCode">
+                    <el-input v-model="form.username"></el-input>
+                </el-form-item>
+                <el-form-item label="密码" prop="eleName">
+                    <el-input type="password" v-model="form.password"></el-input>
+                </el-form-item>
+                <el-form-item>
+                    <el-button @click="resetForm('form')">重 置</el-button>
+                    <el-button type="primary" @click="login('form')">确 定</el-button>
+                </el-form-item>
+            </el-form>
+
+        </el-main>
+        <el-footer></el-footer>
+    </el-container>
+
+
+</div>
+</body>
+<!-- import Vue before Element -->
+
+<script>
+    new Vue({
+        el: '#app',
+        data: function() {
+            return {
+                addDataVisible: true,
+                form:{}
+            }
+        },
+        methods:{
+            login(f){
+                var that = this;
+                /*this.httpPost("login", that.form)*/
+                $.ajax({
+                    url: "interface/login",
+                   // headers: { "Content-Type": "application/json" },
+                    type: 'POST',
+                    dataType: 'json',
+                    data: that.form,
+                    success: function (res) {
+                        that.$message({message: res.message, type: 'success'});
+                        if(res.code = "0000"){
+                            window.location.href="interface/admin/manage.html";
+                        }
+                    },
+                    error: function (e) {
+                        that.$message("接口请求异常！")
+                        console.log(e);
+                        that.sending = false;
+                    }
+                });
+            },httpPost(URL, PARAMS) {
+                var temp = document.createElement("form");
+                temp.action = URL;
+                temp.method = "post";
+                temp.style.display = "none";
+
+                for (var x in PARAMS) {
+                    var opt = document.createElement("textarea");
+                    opt.name = x;
+                    opt.value = PARAMS[x];
+                    temp.appendChild(opt);
+                }
+                document.body.appendChild(temp);
+                temp.submit();
+
+                return temp;
+            }
+        }
+    })
+</script>
+</html>

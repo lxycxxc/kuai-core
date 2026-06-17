@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <!-- import CSS -->
+    <base href="../../">
+    <link rel="stylesheet" href="css/index.css">
+    <script src="js/vue.js"></script>
+    <!-- import JavaScript -->
+    <script src="js/index.js"></script>
+    <script src="js/jquery-1.11.0.js"></script>
+    <script src="js/kuai.js"></script>
+    <script src="js/httpVueLoader.js"></script>
+    <title>KUAI角色权限管理</title>
+    <style>
+        .el-form-item{margin-bottom: 5px}
+        .add .el-form-item__label{color: #409EFF}
+        .el-radio{margin-right: 0px;margin-left: 2px!important;padding: 10px 10px 0 10px!important;}
+        .icon:hover{color: #5cb6ff;}
+        .el-header{   background-color: #1e7fa0;   color: #7bcbd9;  text-align: center;  line-height: 60px; }
+        .el-menu, .quanbu{background-color: #e2f2f6}
+        .small button {height: 25px; padding: 6px 12px;  margin-left: 0px !important;}
+        .el-table .warning-row {  background: #e2f2f6; }
+    </style>
+</head>
+<body>
+<div id="app">
+    <el-row>
+        <el-header>
+            <el-row>
+                <el-col :span="8"><div style="min-height: 1px"></div></el-col>
+                <el-col :span="8"> KUAI权限管理 </el-col>
+                <el-col :span="8" style="text-align: right"> <i class="el-icon-switch-button" @click="logout"></i></el-col>
+            </el-row>
+
+        </el-header>
+        <el-container >
+            <!--<el-aside width="205px" style="background-color: #093147;line-height: 60px;padding: 1px">
+                <el-button class="quanbu" style="width: 100%"  @click="findIFConfigByClassify({})">全部</el-button>
+                <el-menu>
+                    <el-submenu :index="item.id" v-for="item in selects.classifyList">
+                        <template slot="title"><i class="el-icon-folder"></i>{{item.name}}</template>
+                        <el-menu-item-group >
+                            <el-menu-item :index="it2.id" v-for="it2 in item.children" @click="findIFConfigByClassify(it2)">{{it2.name}}</el-menu-item>
+                        </el-menu-item-group>
+                    </el-submenu>
+                </el-menu>
+            </el-aside>-->
+
+            <el-container>
+
+                <el-main>
+                    <el-row>
+                        <el-col :span="24" style="text-align: right;">
+                        <span style="color: red"></span>
+                        </el-col>
+                    </el-row>
+                    <el-row>
+                        <el-col :span="8">
+                            <el-button type="danger" @click="batch_delete({})">删除</el-button>
+                            <el-button type="primary" @click="showData(null)">添加</el-button>
+                            <el-tooltip class="item" effect="dark" content="操作添加，修改或删除后，需点击同步接口才能立即生效！" placement="top-start">
+                                <el-button type="primary" @click="sync()">同步接口</el-button>
+                            </el-tooltip>
+
+                        </el-col>
+                        <el-col :span="8">
+                            <template>
+                                <el-form>
+                                    <el-form-item label="状态">
+                                        <el-select v-model="selects.state" @change="findIFConfigList()" placeholder="请选择状态">
+                                            <el-option label="全部"></el-option>
+                                            <el-option value="1" label="启用"></el-option>
+                                            <el-option value="0" label="停用"></el-option>
+                                        </el-select>
+                                    </el-form-item>
+                                </el-form>
+
+                            </template>
+
+                        </el-col>
+                        <!--<el-col :span="8" style="text-align: right;">
+                            <el-button type="danger" @click="importconfVisible=true">导入</el-button>
+                            <el-button type="danger" @click="download()">导出</el-button>
+                        </el-col>-->
+                    </el-row>
+
+                    <el-table  row-key="id" default-expand-all :tree-props="{children: 'children', hasChildren: 'hasChildren'}"   :data="dataList" height="700"   border>
+                        <!--<el-table-column prop="id" label="id" width="170">
+                        </el-table-column>-->
+                        <el-table-column  type="selection"  width="55"></el-table-column>
+                        <el-table-column prop="CODE" label="权限编码" width="180">  </el-table-column>
+                        <el-table-column prop="NAME" label="权限名称" width="180">  </el-table-column>
+                        <el-table-column prop="SYSVAR" label="系统变量" width="260">
+                            <template slot-scope="scope">
+                                <span v-for="item in JSON.parse(scope.row.SYSVAR)">
+                                    {{item.field}},
+                                </span>
+                            </template>
+                        </el-table-column>
+                        <el-table-column prop="ROLES" label="权限列表" >
+                            <template slot-scope="scope">
+                                <span v-for="(k,v) in JSON.parse(scope.row.ROLES)">
+                                    {{v}},
+                                </span>
+                            </template>
+                        </el-table-column>
+
+
+                        <el-table-column prop="" label="操作" width="220" fixed="right">
+                            <template slot-scope="scope">
+                                <el-button type="danger"   @click="showData(scope.row)"  size="small">编辑</el-button>
+                                <el-button type="warning"  @click="showData(scope.row)"  size="small">删除</el-button>
+                             </template>
+                        </el-table-column>
+
+                    </el-table>
+                </el-main>
+            </el-container>
+        </el-container>
+    </el-row>
+
+    <el-dialog :title="addData.id!=null?'修改':'添加'" :visible.sync="addDataVisible"   width="65%" >
+        <div style="height: 550px;overflow: auto">
+            <el-form :model="addData" ref="addData" :rules="rules" label-width="120px" >
+            <el-row>
+                <el-col :span="8">
+                    <el-form-item label="权限编码" prop="code">
+                        <el-input v-model="addData.code"></el-input>
+                    </el-form-item>
+                </el-col>
+                <el-col :span="8">
+                    <el-form-item label="权限名称" prop="name">
+                        <el-input v-model="addData.name"></el-input>
+                    </el-form-item>
+                </el-col>
+            </el-row>
+            <el-row>
+                <el-card class="box-card">
+                    <div slot="header" class="clearfix">
+                        <span>系统变量设置</span>
+                        <el-button style="float: right; padding: 3px 0" type="text" @click="sysvar.visible = true">添加</el-button>
+                    </div>
+                    <el-row :gutter="5">
+                        <el-col :span="6" v-for="item in addData.sysvar">
+                            <el-card class="box-card">
+                                <div slot="header" class="clearfix">
+                                    <span>{{item.type}}</span>
+                                    <span style="float: right; padding: 3px 0">{{item.field}}</span>
+                                </div>
+                                <div> <span>{{item.remark}}</span></div>
+                            </el-card>
+                        </el-col>
+                    </el-row>
+
+                </el-card>
+            </el-row>
+
+            <el-tabs v-model="activeName" @tab-click="handleClick">
+                <el-tab-pane :label="item.remark" v-for="item in tableData">
+                    <el-row :gutter="10">
+                        <el-col :span="8" v-for="dd in item.children">
+                            <el-card class="box-card">
+                                <div slot="header" class="clearfix">
+                                    <el-checkbox :label="dd.alias+'('+dd.remark+')'" :name="dd.alias" :value="addData.roles[dd.alias]!=null" @change="rolesClick"></el-checkbox>
+                                </div>
+                               <div style="min-height:110px"> <template v-if="addData.roles[dd.alias]!=null">
+
+                                   <el-checkbox-group v-model="addData.roles[dd.alias].roles">
+                                       <el-checkbox :label="rr" v-for="rr in dd.roles.split(',')"></el-checkbox>
+                                   </el-checkbox-group>
+
+                                    <el-divider content-position="right">条件权限设置 <i class="el-icon-circle-plus" @click="addRoleParam(addData.roles[dd.alias].param)"></i></el-divider>
+                                    <div>
+                                        <el-row v-for="(item2,index) in addData.roles[dd.alias].param">
+                                            <el-col :span="16">
+                                                <el-select v-model="item2.field"   placeholder="请选择字段" style="width: 100px">
+                                                    <el-option  v-for="kk in dd.keys.split(',')" :key="kk" :label="kk" :value="kk"></el-option>
+                                                </el-select>
+                                                <el-select v-model="item2.varr"   placeholder="请选择取值" style="width: 100px">
+                                                    <el-option  v-for="item in addData.sysvar" :key="item.field" :label="item.remark" :value="item.field"></el-option>
+                                                </el-select>
+                                            </el-col>
+                                            <el-col :span="6">
+                                                <el-checkbox-group v-model="item2.type">
+                                                    <el-row><el-checkbox label="where" ></el-checkbox></el-row>
+                                                    <el-row> <el-checkbox label="set_data"></el-checkbox></el-row>
+                                                </el-checkbox-group>
+                                            </el-col>
+                                            <el-col :span="2">
+                                                <i class="el-icon-remove-outline" @click="removeRoleParam(addData.roles[dd.alias].param,index)"></i>
+                                            </el-col>
+                                        </el-row>
+                                    </div>
+
+                                </template></div>
+
+
+                            </el-card>
+                        </el-col>
+                    </el-row>
+                </el-tab-pane>
+
+            </el-tabs>
+
+
+
+        </el-form>
+        </div>
+        <div slot="footer" class="dialog-footer">
+            <el-button @click="resetCompany('addData')">重 置</el-button>
+            <el-button type="primary" @click="saveData('addData')">确 定</el-button>
+        </div>
+    </el-dialog>
+
+
+
+    <el-dialog title="设置取值" :visible.sync="sysvar.visible" width="500px">
+        <el-form :model="sysvar.bean" ref="sysvar" label-width="80px"  >
+
+            <el-form-item label="取值方式">
+                <el-select v-model="sysvar.bean.type"  placeholder="请选择取值方式" style="width: 130px">
+                    <el-option  v-for="item in sysvar.selects.type" :key="item" :label="item" :value="item"></el-option>
+                </el-select>
+            </el-form-item>
+            <el-form-item label="变量名">
+                <el-input v-model="sysvar.bean.field"></el-input>
+            </el-form-item>
+            <el-form-item label="变量说明">
+                <el-input v-model="sysvar.bean.remark"></el-input>
+            </el-form-item>
+
+        </el-form>
+        <div slot="footer" class="dialog-footer">
+            <el-button @click="sysvar.visible = false">关闭</el-button>
+            <el-button type="primary" @click="saveSysvarForm(sysvar.bean)">确 定</el-button>
+        </div>
+    </el-dialog>
+
+
+
+
+
+
+
+</div>
+</body>
+<!-- import Vue before Element -->
+<script>
+
+    function sendHttpPost(url,data,callback){
+        $.ajax({
+            url: url,
+            headers: { "Content-Type": "application/json" },
+            type: 'POST',
+            dataType: 'json',
+            data: JSON.stringify(data),
+            success: function (d) {
+                if(callback!=null) callback(d);
+            },
+            error: function (e) {console.log(e)}
+        });
+    }
+
+</script>
+
+<script>
+    var app = new Vue({
+        el: '#app',
+        components: {
+            'set-param': httpVueLoader('components/set_param.vue'),
+        },
+        data: function() {
+            return {
+                sysvar:{
+                    visible:false,
+                    bean:{type:"",field:"",remark:""},
+                    selects:{
+                        type:["Param","Attr","Header","Cookie","Sql"]
+                    }
+                },
+
+                dataList:[],
+                addData:{roles:{},sysvar:[]},
+                addDataVisible: false,
+                tableData:[],
+                selects:{
+                    state:"1",
+                    classifyMap:{},
+                }
+            }
+        },
+        methods:{
+            findDataList(){
+                var that = this;
+                $.ajax({
+                    url: 'authority/findList',
+                    type: 'POST',
+                    dataType: 'json',
+                    success: function (d) {
+                        that.dataList = d;
+                    },
+                    error: function (e) {console.log(e)}
+                });
+            },
+            showData(data){
+                if(data!=null){
+                    this.addData = {id:data.ID,code:data.CODE,name:data.NAME,roles:{}};
+                    var roles = JSON.parse(data.ROLES)
+                    for(var k in roles){
+                        this.$set(this.addData.roles,k,roles[k]);
+                    }
+
+                    this.$set(this.addData,"sysvar",JSON.parse(data.SYSVAR));
+                }else{
+                    this.addData = {roles:{},sysvar:[]};
+                }
+                this.addDataVisible = true;
+            },
+            rolesClick(value,t){
+                var name = t.currentTarget.name
+                console.log("rolesClick",value,name)
+                if(value){
+                    this.$set(this.addData.roles,name,{roles:[],param:[]});
+                }else{
+                    this.$delete(this.addData.roles,name);
+                }
+            },
+            addRoleParam(roleParam){
+                roleParam.push({field:"",varr:"",type:[]});
+            },
+            removeRoleParam(roleParam,index){
+                debugger
+                delete roleParam.splice(index, 1)
+            },
+
+            saveData(formName){
+
+                console.log("saveData",this.roles)
+
+                var data = this.addData;
+
+                var saveddd = JSON.parse(JSON.stringify(data));
+                saveddd.sysvar  = JSON.stringify(data.sysvar)
+                saveddd.roles  = JSON.stringify(data.roles)
+
+
+                var that = this;
+                this.$refs[formName].validate((valid) => {
+                    if (valid) {
+
+                        $.ajax({
+                            url: 'authority/saveData',
+                            headers: { "Content-Type": "application/json" },
+                            type: 'POST',
+                            dataType: 'json',
+                            data: JSON.stringify(saveddd),
+                            success: function (d) {
+                                if(d.code == '1'){
+                                    //操作成功
+                                    that.addDataVisible = false;
+                                    that.findDataList();
+                                }
+                                that.$message(d.message)
+                            },
+                            error: function (e) {console.log(e)}
+                        });
+
+                    } else {
+                        console.log('error submit!!');
+                        that.addDataVisible = true;
+                        return false;
+                    }
+                });
+            },findKuaiConfig(){
+                var that = this;
+                $.ajax({
+                    url: 'interface/findKuaiConfig',
+                    type: 'POST',
+                    dataType: 'json',
+                    success: function (d) {
+                        that.selects.classifyList = d.classifyList;
+                        that.selects.regxList = d.regxList
+                        var  classifyMap = {};
+                        that.treeListToMap(d.classifyList,classifyMap,'id','name','children');
+                        that.selects.classifyMap = classifyMap;
+                        console.log("classifyMap:"+JSON.stringify(classifyMap));
+                        that.findIFConfigList();
+                    },
+                    error: function (e) {console.log(e)}
+                });
+            },treeListToMap(list,map,k,v,c){
+                for(var i in list){
+                    var ll = list[i];
+                    map[ll[k]] = ll[v];
+                    var list_c = ll[c];
+                    if(list_c !=null){
+                        this.treeListToMap(list_c,map,k,v,c);
+                    }
+                }
+            },
+
+            findIFConfigList(data){
+                data = data == null?{}:data;
+                var that = this;
+                var state = that.selects.state;
+                var classid = that.selects.classId;
+                data.state = state;
+                data.classify = classid;
+
+                var classifyMap = that.selects.classifyMap;
+
+                $.ajax({
+                    url: 'interface/findIFConfigList',
+                    headers: { "Content-Type": "application/json" },
+                    type: 'POST',
+                    dataType: 'json',
+                    data: JSON.stringify(data),
+                    success: function (d) {
+
+                        var list = d;
+                        var newmap = {};
+                        var new_list = [];
+                        for(var i in list){
+                            var ddd = list[i];
+                            var classify = ddd.classify;
+                            var nd = newmap[classify];
+                            if(nd == null){
+                                nd = {id:classify,remark:classifyMap[classify],children:[]}
+                                newmap[classify] = nd;
+                            }
+                            nd.children.push(ddd);
+                        }
+
+                        for(var i in newmap){
+                            new_list.push(newmap[i]);
+                        }
+                        console.log("new_list:",new_list)
+
+                        that.tableData = new_list;
+                    },
+                    error: function (e) {console.log(e)}
+                });
+
+            },
+
+
+
+
+
+            logout(){
+                var that = this;
+                this.$confirm('确认退出当前登录?', '提示', {
+                    confirmButtonText: '确定',
+                    cancelButtonText: '取消',
+                    type: 'warning'
+                }).then(() => {
+                    $.ajax({
+                        url: "interface/logout",
+                        // headers: { "Content-Type": "application/json" },
+                        type: 'POST',
+                        dataType: 'json',
+                        data: {},
+                        success: function (res) {
+                            that.$message({message: res.message, type: 'success'});
+                            if(res.code = "0000"){
+                                window.location.href="interface/admin/manage.html";
+                            }
+                        },
+                        error: function (e) {
+                            that.$message("接口请求异常！")
+                            console.log(e);
+                            that.sending = false;
+                        }
+                    });
+                });
+
+            },
+
+            //------------------设置取值------------------
+
+            saveSysvarForm(form){
+                var newform = JSON.parse(JSON.stringify(form))
+                this.addData.sysvar.push(newform);
+                this.sysvar.visible=false;
+                this.sysvar.bean = {type:"",field:"",remark:""};
+            }
+
+
+        },
+        created(){
+            this.findDataList();
+            this.findKuaiConfig();
+          //  this.findTables();
+
+        }
+    })
+</script>
+</html>
+<script>
+   /* import Company from "../../../../../../kuai-admin/src/views/table/company";
+    export default {
+        components: {Company}
+    }*/
+</script>

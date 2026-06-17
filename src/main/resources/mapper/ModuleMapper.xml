@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="cn.lxycx.kuaicore.mapper.ModuleMapper">
+    <update id="initFileStore" databaseId="oracle">
+        create table KUAI_FILE_STORE
+        (
+            ID         VARCHAR2(50),
+            PATH       VARCHAR2(50),
+            NAME       VARCHAR2(200),
+            ISDELETE   NUMBER(1)    default 0,
+            FILESIZE   NUMBER,
+            CREATETIME TIMESTAMP(6) default sysdate,
+            DELTIME    TIMESTAMP(6)
+        )
+    </update>
+
+</mapper>

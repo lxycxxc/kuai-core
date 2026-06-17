@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="cn.lxycx.kuaicore.mapper.InitTableMapper">
+
+    <!--接口管理-->
+    <update id="KUAI_INTERFACE_CONF" databaseId="oracle">
+        create table KUAI_INTERFACE_CONF
+        (
+            ID        VARCHAR2(32) default sys_guid() not null,
+            TABLES    NVARCHAR2(2000),
+            TABLETYPE NVARCHAR2(10),
+            ALIAS     VARCHAR2(200) unique,
+            REMARK    NVARCHAR2(100),
+            CLASSIFY  NVARCHAR2(32),
+            KEYS      NVARCHAR2(2000),
+            SETVALUE  NVARCHAR2(500),
+            VERIFY    NVARCHAR2(2000),
+            ROLES     NVARCHAR2(100),
+            FIELD     NVARCHAR2(500),
+            WHERES    NVARCHAR2(500),
+            ISCX      VARCHAR2(10) default 0,
+            ISXG      VARCHAR2(10) default 0,
+            ISSC      VARCHAR2(10) default 0,
+            AFTER     NVARCHAR2(2000),
+            FRONT     NVARCHAR2(2000),
+            LISTCONF  NVARCHAR2(2000),
+            FORMCONF  NVARCHAR2(2000),
+            STATE     VARCHAR2(1)  default 0,
+            ADDTIME   DATE         default sysdate
+        )
+    </update>
+    <update id="KUAI_INTERFACE_CONF" databaseId="mysql">
+        create table KUAI_INTERFACE_CONF
+        (
+            ID        VARCHAR(50)  not null,
+            TABLES    VARCHAR(2000),
+            TABLETYPE VARCHAR(10),
+            ALIAS     VARCHAR(200) unique,
+            REMARK    VARCHAR(100),
+            CLASSIFY  VARCHAR(32),
+            `KEYS`      VARCHAR(2000),
+            VERIFY    VARCHAR(2000),
+            SETVALUE  VARCHAR(500),
+            ROLES     VARCHAR(100),
+            FIELD     VARCHAR(500),
+            WHERES    VARCHAR(500),
+            ISCX      VARCHAR(10) default 0,
+            ISXG      VARCHAR(10) default 0,
+            ISSC      VARCHAR(10) default 0,
+            AFTER     VARCHAR(2000),
+            FRONT     VARCHAR(2000),
+            LISTCONF  VARCHAR(2000),
+            FORMCONF  VARCHAR(2000),
+            STATE     VARCHAR(1)  default 0,
+            ADDTIME   datetime         default now()
+        )
+    </update>
+
+
+
+    <!--文件上传下载-->
+    <update id="KUAI_FILE_STORE" databaseId="oracle">
+        create table KUAI_FILE_STORE
+        (
+            ID         VARCHAR2(50),
+            PATH       VARCHAR2(50),
+            NAME       VARCHAR2(200),
+            ISDELETE   NUMBER(1)    default 0,
+            FILESIZE   NUMBER,
+            CREATETIME TIMESTAMP(6) default sysdate,
+            DELTIME    TIMESTAMP(6)
+        )
+    </update>
+    <update id="KUAI_FILE_STORE" databaseId="mysql">
+        create table KUAI_FILE_STORE
+        (
+            ID         VARCHAR(50),
+            PATH       VARCHAR(50),
+            NAME       VARCHAR(200),
+            ISDELETE   int(1)    default 0,
+            FILESIZE   int,
+            CREATETIME datetime  default now(),
+            DELTIME    datetime
+        )
+    </update>
+
+
+
+    <!--权限管理-->
+    <update id="KUAI_AUTHORITY_CONF" databaseId="oracle">
+        create table KUAI_AUTHORITY_CONF
+        (
+            ID        VARCHAR2(32) default sys_guid() not null,
+            CODE     VARCHAR2(200) unique,
+            NAME    NVARCHAR2(100),
+            SYSVAR  NVARCHAR2(500),
+            ROLES    NVARCHAR2(2000),
+            STATE     VARCHAR2(1)  default 0,
+            ADDTIME   DATE         default sysdate
+        )
+    </update>
+    <update id="KUAI_AUTHORITY_CONF" databaseId="mysql">
+        create table KUAI_AUTHORITY_CONF
+        (
+            ID        VARCHAR(50)  not null,
+            CODE     VARCHAR(200) unique,
+            NAME VARCHAR(100),
+            SYSVAR     VARCHAR(2000),
+            ROLES  VARCHAR(2000),
+            STATE     VARCHAR(1)  default 0,
+            ADDTIME   datetime         default now()
+        )
+    </update>
+
+
+</mapper>

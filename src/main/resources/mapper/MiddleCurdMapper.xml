@@ -1,0 +1,197 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.lxycx.kuaicore.mapper.MiddleCurdMapper">
+
+
+    <sql id="middle_wheres">
+        <foreach collection="wheres" index="k" item="v">
+            <foreach collection="v" index="f" item="v2" open="and" separator="and">
+                <choose>
+                    <when test="f == 'in_select' and v2!=null">
+                        ${k} in (${v2})
+                    </when>
+                    <when test="f == 'notin_select' and v2!=null">
+                        ${k} not in (${v2})
+                    </when>
+                    <when test="f == 'is' and v2!=null">
+                        ${k} is ${v2}
+                    </when>
+                    <when test="f == 'in' and v2!=null">
+                        ${k} in
+                        <foreach collection="v2.toString().split(',')" item="v3" open="(" separator=" , " close=")">
+                            #{v3,jdbcType=VARCHAR}
+                        </foreach>
+                    </when>
+                    <when test="f == 'not in' and v2!=null">
+                        ${k} not in
+                        <foreach collection="v2.toString().split(',')" item="v3" open="(" separator=" , " close=")">
+                            #{v3,jdbcType=VARCHAR}
+                        </foreach>
+                    </when>
+                    <when test="v2.toString().indexOf('(')==0">
+                        ${k} ${f} ${v2}
+                    </when>
+                    <otherwise>
+                        ${k} ${f} #{v2,jdbcType=VARCHAR}
+                    </otherwise>
+                </choose>
+            </foreach>
+        </foreach>
+    </sql>
+
+    <sql id="middle_order_by">
+        <if test="order_by!=null and order_by.size>0">
+            order by
+            <foreach collection="order_by" index="k" item="v" separator=",">
+                ${k} ${v}
+            </foreach>
+        </if>
+    </sql>
+
+    <select id="getCount" resultType="java.lang.Integer">
+        select count(1) from ${tablename} where 1=1
+        <include refid="middle_wheres"/>
+    </select>
+
+
+    <select id="getPage" resultType="java.util.LinkedHashMap"  databaseId="oracle">
+        <bind name="ppp" value="(page-1) * limit + 1" />
+            select d.*, r from(
+                select t0.${field},rownum r from(
+                    select ${field} from ${tablename} where 1=1
+                    <include refid="middle_wheres"/>
+                    <include refid="middle_order_by"/>
+                ) t0
+            ) d  where r>=#{ppp,jdbcType=DECIMAL} and r &lt; #{ppp,jdbcType=DECIMAL}+#{limit,jdbcType=DECIMAL}
+    </select>
+
+
+    <select id="getList" resultType="java.util.LinkedHashMap">
+        select ${field} from ${tablename} where 1=1
+        <include refid="middle_wheres"/>
+        <include refid="middle_order_by"/>
+
+    </select>
+
+
+    <select id="getByOne" resultType="java.util.LinkedHashMap" databaseId="oracle">
+        select ${field} from ${tablename} where  1=1
+        <include refid="middle_wheres"/>
+        <include refid="middle_order_by"/>
+    </select>
+
+
+    <delete id="deleteByOne" databaseId="oracle">
+        delete ${tablename} where rownum <![CDATA[ <= ]]> 1
+        <include refid="middle_wheres"/>
+    </delete>
+
+    <delete id="delete" databaseId="oracle">
+        delete ${tablename}
+        <where>
+            <include refid="middle_wheres"/>
+        </where>
+    </delete>
+
+    <update id="update" databaseId="oracle">
+
+        update ${tablename} set
+
+        <foreach collection="set_data" index="k" item="v" separator=",">
+            <choose>
+                <when test="v!=null and v.toString().indexOf('(')==0">
+                    ${k}=${v}
+                </when>
+                <otherwise>
+                    ${k}=#{v,jdbcType=VARCHAR}
+                </otherwise>
+            </choose>
+
+        </foreach>
+
+        <where>
+            <include refid="middle_wheres"/>
+        </where>
+
+    </update>
+
+    <update id="updatePlus" databaseId="oracle">
+
+        update ${tablename} set
+
+        <foreach collection="set_data" index="k" item="v"  separator=",">
+            ${k}=${v}
+        </foreach>
+
+        <where>
+            <include refid="middle_wheres"/>
+        </where>
+
+    </update>
+
+    <update id="insert" databaseId="oracle">
+
+        insert into ${tablename}(
+        <foreach collection="set_data.keys" item="k" open="" separator="," close=")" >
+            ${k}
+        </foreach>
+
+        values(
+        <foreach collection="set_data.values" item="v" open="" separator="," close=")" >
+            <choose>
+                <when test="v!=null and v.toString().indexOf('MAX(')>=0">
+                   (select ${v} from ${tablename})
+                </when>
+                <when test="v!=null and v.toString().indexOf('(')==0">
+                    ${v}
+                </when>
+                <otherwise>
+                    #{v,jdbcType=VARCHAR}
+                </otherwise>
+            </choose>
+
+
+        </foreach>
+
+    </update>
+
+    <insert id="batchInsert" >
+        insert into ${tablename}(
+        <foreach collection="list[0].keys" item="k" open="" separator=","
+                 close=")">
+            ${k}
+        </foreach>
+
+        <foreach collection="list" item="c" separator="UNION ALL">
+            SELECT
+            <foreach collection="c.values" item="v" open="" separator="," >
+                #{v,jdbcType=VARCHAR}
+            </foreach>
+            FROM dual
+        </foreach>
+    </insert>
+
+
+
+    <select id="select" resultType="java.util.LinkedHashMap">
+        ${sql}
+    </select>
+    <select id="selectOne" resultType="java.util.LinkedHashMap">
+        ${sql}
+    </select>
+    <select id="selectInt" resultType="java.lang.Integer">
+        ${sql}
+    </select>
+    <select id="selectObj" resultType="java.lang.Object">
+        ${sql}
+    </select>
+
+    <update id="updateSql">
+        ${sql}
+    </update>
+
+
+
+</mapper>

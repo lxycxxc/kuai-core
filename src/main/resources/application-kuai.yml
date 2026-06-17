@@ -1,0 +1,48 @@
+kuai:
+  api:
+    isDataMode: false #是否启用数据定义模式
+  manage:
+    key: 5X2X8SYX
+    username: xxx
+    password: xxx
+#  fileStoresRootPath: C:\data\down
+  fileStores:
+    imgs: {path: 'imgs',suffix: 'pdf',size: 10485760}
+    files: {path: 'files',suffix: '*',size: 10485760}
+  classifyList:
+    - id: 1
+      name: 系统
+      children:
+        - id: 100
+          name: 基础功能
+        - id: 101
+          name: 用户模块
+        - id: 102
+          name: 权限模块
+    - id: 2
+      name: 业务
+      children:
+        - id: 201
+          name: 内容模块
+        - id: 202
+          name: 订单模块
+
+  regxList:
+    - {name: 'NUMBER',remark: '1-9位纯数字',regx: '[0-9]{1,9}'}
+    - {name: 'BIGNUMBER',remark: '纯数字位数不限',regx: '[0-9]+'}
+    - {name: 'EMAIL',remark: '邮箱',regx: '^\s*\w+(?:\.{0,1}[\w-]+)*@[a-zA-Z0-9]+(?:[-.][a-zA-Z0-9]+)*\.[a-zA-Z]+\s*$'}
+    - {name: 'PHONE',remark: '手机号码',regx: '^((13[0-9])|(14[5|7])|(15([0-3]|[5-9]))|(18[0,5-9]))\d{8}$'}
+    - {name: 'TEL',remark: '固定电话',regx: '^(0\d{2}-\d{8}(-\d{1,4})?)|(0\d{3}-\d{7,8}(-\d{1,4})?)$'}
+    - {name: 'IDCARD',remark: '身份证',regx: '(\d{14}[0-9a-zA-Z])|(\d{17}[0-9a-zA-Z])'}
+    - {name: 'URL',remark: '网址',regx: 'http(s)?://([\w-]+\.)+[\w-]+(/[\w- ./?%&=]*)?'}
+    - {name: 'DATETIME',remark: '时间',regx: '^(19|20)[0-9][0-9]-((0[1-9])|(1[0-2]))-(([0-2][1-9])|([1-3][0-1])) (([0-2][0-3])|([0-1][0-9])):[0-5][0-9]:[0-5][0-9]$'}
+    - {name: 'DATE',remark: '日期',regx: '^(19|20)[0-9][0-9]-((0[1-9])|(1[0-2]))-(([0-2][1-9])|([1-3][0-1]))$'}
+    - {name: 'YZCODE',remark: '邮政编码',regx: '^\d{6}$'}
+
+#  modules:
+#    - name: 'KUAI核心功能'
+#      init: true
+#      tables:
+#        - {name: 'KUAI_WEB_TREECLASS',remark: '菜单管理',init: false,add: }
+#        - {name: 'KUAI_FILE_STORE',remark: '上传下载',init: false,add: }
+#        - {name: 'KUAI_AUTHORITY_CONF',remark: '权限管理',init: true,add: }

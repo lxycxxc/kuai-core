@@ -1,0 +1,23 @@
+spring:
+  profiles:
+    active: dev
+    include: kuai,regxs
+  freemarker:
+    suffix: .html
+    template-loader-path: classpath:/templates/
+    cache: false
+
+server:
+  port: 7001
+  servlet:
+    context-path: /Kuai
+
+log4j:
+  logger:
+    org:
+      apache:
+        ibatis: debug,stdoutlog4j.logger.java.sql=debug,stdout
+
+mybatis-plus:
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl

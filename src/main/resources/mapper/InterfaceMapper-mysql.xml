@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="cn.lxycx.kuaicore.mapper.InterfaceMapper">
+
+    <update id="createConfTable" databaseId="mysql">
+        create table KUAI_INTERFACE_CONF
+        (
+            ID        VARCHAR(50)  not null,
+            TABLES    VARCHAR(2000),
+            TABLETYPE VARCHAR(10),
+            ALIAS     VARCHAR(200) unique,
+            REMARK    VARCHAR(100),
+            CLASSIFY  VARCHAR(32),
+            `KEYS`      VARCHAR(2000),
+            VERIFY    VARCHAR(2000),
+            SETVALUE  VARCHAR(500),
+            ROLES     VARCHAR(100),
+            FIELD     VARCHAR(500),
+            WHERES    VARCHAR(500),
+            ISCX      VARCHAR(10) default 0,
+            ISXG      VARCHAR(10) default 0,
+            ISSC      VARCHAR(10) default 0,
+            AFTER     VARCHAR(2000),
+            FRONT     VARCHAR(2000),
+            LISTCONF  VARCHAR(2000),
+            FORMCONF  VARCHAR(2000),
+            STATE     VARCHAR(1)  default 0,
+            ADDTIME   datetime         default now()
+        )
+    </update>
+
+
+    <select id="findTables" resultType="java.util.Map" databaseId="mysql">
+        select table_name TABLE_NAME,(case table_type when 'BASE TABLE' then 'TABLE' when 'SYSTEM VIEW' then 'VIEW' end) TABLE_TYPE,table_comment REMARK, create_time createTime
+        from information_schema.tables
+        where table_schema = (select database())
+        order by create_time desc
+    </select>
+
+
+    <select id="findColumns" resultType="java.util.Map" databaseId="mysql">
+        select column_name,DATA_TYPE,character_maximum_length data_length  from
+        information_schema.COLUMNS where table_schema=(select database()) and table_name = #{tableName}  order by ordinal_position
+    </select>
+
+
+    <insert id="addIFConfig" databaseId="mysql">
+        insert into KUAI_INTERFACE_CONF(ID,TABLES,TABLETYPE,ALIAS,CLASSIFY,REMARK,`KEYS`,VERIFY,ROLES,FIELD,WHERES, ISCX, ISXG, ISSC, AFTER, FRONT, STATE)
+        values(REPLACE(UUID(),"-",""),#{tables,jdbcType=VARCHAR},#{tabletype,jdbcType=VARCHAR},#{alias,jdbcType=VARCHAR}
+        ,#{classify,jdbcType=VARCHAR},#{remark,jdbcType=VARCHAR},#{keys,jdbcType=VARCHAR},
+        #{verify,jdbcType=VARCHAR},#{roles,jdbcType=VARCHAR},#{field,jdbcType=VARCHAR},#{wheres,jdbcType=VARCHAR}
+        ,#{iscx,jdbcType=VARCHAR},#{isxg,jdbcType=VARCHAR},#{issc,jdbcType=VARCHAR},#{after,jdbcType=VARCHAR},#{front,jdbcType=VARCHAR},1)
+    </insert>
+
+    <update id="updateIFConfig" databaseId="mysql">
+        update KUAI_INTERFACE_CONF
+        <set>
+            <foreach collection="maps.keys" item="k" separator=",">
+                `${k}`=#{maps[${k}],jdbcType=VARCHAR}
+            </foreach>
+        </set>
+
+        where ID = #{id,jdbcType=VARCHAR}
+    </update>
+
+
+</mapper>

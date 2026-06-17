@@ -1,0 +1,1652 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <!-- import CSS -->
+    <base href="../../">
+    <link rel="stylesheet" href="css/index.css">
+    <script src="js/vue.js"></script>
+    <!-- import JavaScript -->
+    <script src="js/index.js"></script>
+    <script src="js/jquery-1.11.0.js"></script>
+    <script src="js/kuai.js"></script>
+    <script src="js/httpVueLoader.js"></script>
+    <title>KUAI接口管理</title>
+    <style>
+        .el-form-item{margin-bottom: 5px}
+        .add .el-form-item__label{color: #409EFF}
+        .el-radio{margin-right: 0px;margin-left: 2px!important;padding: 10px 10px 0 10px!important;}
+        .icon:hover{color: #5cb6ff;}
+        .el-header{   background-color: #1e7fa0;   color: #7bcbd9;  text-align: center;  line-height: 60px; }
+        .el-menu, .quanbu{background-color: #e2f2f6}
+        .small button {height: 25px; padding: 6px 12px;  margin-left: 0px !important;}
+        .el-table .warning-row {  background: #e2f2f6; }
+    </style>
+</head>
+<body>
+<div id="app">
+    <el-row>
+        <el-header>
+            <el-row>
+                <el-col :span="8"><div style="min-height: 1px"></div></el-col>
+                <el-col :span="8"> Kuai接口管理 </el-col>
+                <el-col :span="8" style="text-align: right"> <i class="el-icon-switch-button" @click="logout"></i></el-col>
+            </el-row>
+
+        </el-header>
+        <el-container >
+            <el-aside width="205px" style="background-color: #093147;line-height: 60px;padding: 1px">
+                <el-button class="quanbu" style="width: 100%"  @click="findIFConfigByClassify({})">全部</el-button>
+                <el-menu>
+                    <el-submenu :index="item.id" v-for="item in selects.classifyList">
+                        <template slot="title"><i class="el-icon-folder"></i>{{item.name}}</template>
+                        <el-menu-item-group >
+                            <el-menu-item :index="it2.id" v-for="it2 in item.children" @click="findIFConfigByClassify(it2)">{{it2.name}}</el-menu-item>
+                        </el-menu-item-group>
+                    </el-submenu>
+                </el-menu>
+            </el-aside>
+
+            <el-container>
+
+                <el-main>
+                    <el-row>
+                        <el-col :span="24" style="text-align: right;">
+                        <span style="color: red"></span>
+                        </el-col>
+                    </el-row>
+                    <el-row>
+                        <el-col :span="8">
+                            <el-button type="danger" @click="batch_delete({})">删除</el-button>
+                            <el-button type="primary" @click="showData({})">添加</el-button>
+                            <el-tooltip class="item" effect="dark" content="操作添加，修改或删除后，需点击同步接口才能立即生效！" placement="top-start">
+                                <el-button type="primary" @click="sync()">同步接口</el-button>
+                            </el-tooltip>
+
+                        </el-col>
+                        <el-col :span="8">
+                            <template>
+                                <el-form>
+                                    <el-form-item label="状态">
+                                        <el-select v-model="selects.state" @change="findIFConfigList()" placeholder="请选择状态">
+                                            <el-option label="全部"></el-option>
+                                            <el-option value="1" label="启用"></el-option>
+                                            <el-option value="0" label="停用"></el-option>
+                                        </el-select>
+                                    </el-form-item>
+                                </el-form>
+
+                            </template>
+
+                        </el-col>
+                        <el-col :span="8" style="text-align: right;">
+                            <el-button type="danger" @click="importconfVisible=true">导入</el-button>
+                            <el-button type="danger" @click="download()">导出</el-button>
+                        </el-col>
+                    </el-row>
+
+                    <el-table  row-key="id" default-expand-all :tree-props="{children: 'children', hasChildren: 'hasChildren'}" :row-class-name="tableRowClassName" :data="tableData" height="700" @selection-change="handleSelectionChange"  border>
+                        <!--<el-table-column prop="id" label="id" width="170">
+                        </el-table-column>-->
+                        <el-table-column  type="selection"  width="55"></el-table-column>
+                        <el-table-column prop="alias" label="别名" width="180">
+                        </el-table-column>
+                        <el-table-column prop="remark" label="接口说明" width="230"> </el-table-column>
+                        <el-table-column prop="tabletype" label="类型" width="100">
+                        </el-table-column>
+                        <el-table-column prop="classify" label="分组" width="120">
+                            <template slot-scope="scope">
+                                {{selects.classifyMap[scope.row.classify]}}
+                            </template>
+                        </el-table-column>
+
+                        <el-table-column prop="roles" label="操作权限" width="160"> </el-table-column>
+
+                        <el-table-column  label="列表表单" width="80"  align="center">
+                            <template   v-if="scope.row.roles!=null"  slot-scope="scope">
+                                <i :class="scope.row.listconf!=null?'el-icon-s-tools':'el-icon-setting'" style="font-size: 20px"  @click="listConfVisible_show(scope.row)"  ></i>
+                            </template>
+                        </el-table-column>
+                        <!--<el-table-column  label="表单" width="65"  align="center">
+                            <template slot-scope="scope">
+                                <i :class="scope.row.listconf!=null?'el-icon-s-tools':'el-icon-setting'" style="font-size: 20px" @click="formConfVisible_show(scope.row)"></i>
+                            </template>
+                        </el-table-column>-->
+
+                        <el-table-column  label="状态" width="80"   align="center">
+                            <template  v-if="scope.row.state!=null"  slot-scope="scope">
+                                <el-switch
+                                        v-model="scope.row.state"
+                                        @change="updateState(scope.row)"
+                                        active-color="#13ce66" inactive-color="#ff4949"
+                                        active-value="1" inactive-value="0">
+                                </el-switch>
+                            </template>
+                        </el-table-column>
+
+                        <el-table-column prop="keys" label="允许操作的字段" width="280" :show-overflow-tooltip="true">
+                            <template  v-if="scope.row.keys!=null"  slot-scope="scope">
+                                <div v-if="scope.row.keys.length>62">
+                                    {{scope.row.keys.substr(0,60)}}...
+                                </div>
+                                <div v-else>
+                                    {{scope.row.keys}}
+                                </div>
+
+                            </template>
+                           <!-- <template slot-scope="scope">
+                                <el-popover
+                                        placement="top-start"
+                                        title="校验"
+                                        width="200"
+                                        trigger="hover"
+                                        content="scope.row.verify">
+                                    <template slot="reference">{{scope.row.keys}}</template>
+                                </el-popover>
+                            </template>-->
+                        </el-table-column>
+
+                        <el-table-column prop="" label="操作" width="220" fixed="right">
+                            <template slot-scope="scope">
+                                <div v-if="scope.row.roles!=null" class="small">
+                                    <el-button type="danger"   @click="showData(scope.row)"  size="small">编辑</el-button>
+                                    <el-button type="warning"  @click="showTs(scope.row)"  size="small">调试</el-button>
+                                    <el-button type="primary"  v-if="scope.row.roles.indexOf('查询')>=0" @click="openSelect(scope.row)"  size="small">查询</el-button>
+                                </div>
+                             </template>
+                        </el-table-column>
+
+                    </el-table>
+                </el-main>
+            </el-container>
+        </el-container>
+    </el-row>
+
+    <el-dialog :title="addData.id!=null?'修改接口':'添加接口'" :visible.sync="addDataVisible"   width="65%" >
+        <div style="height: 550px;overflow: auto">
+            <el-form :model="addData" ref="addData" :rules="rules" label-width="120px" >
+            <el-row>
+                <el-col :span="8">
+                    <el-form-item label="选择类型" prop="tabletype">
+                        <el-select   v-model="addData.tabletype">
+                            <el-option
+                                    v-for="item in selects.tableTypeList"
+                                    :key="item.value"
+                                    :label="item.name"
+                                    :value="item.value">
+                            </el-option>
+                        </el-select>
+                    </el-form-item>
+                </el-col>
+            </el-row>
+            <el-card>
+            <el-row>
+                <el-col :span="8">
+                    <el-form-item v-if="addData.tabletype != 'SQL'" label="选择表" prop="tables">
+                        <el-select   v-model="addData.tables" @change="compileSQL(addData.tables)" clearable filterable  >
+                            <el-option
+                                    v-for="item in selects.tableList[addData.tabletype]"
+                                    :key="item.value"
+                                    :label="item.TABLE_NAME"
+                                    :value="item.TABLE_NAME">
+                            </el-option>
+                        </el-select>
+                    </el-form-item>
+                </el-col>
+                <el-col :span="8">
+                    <el-form-item label="分组" prop="classify">
+                    <el-select   v-model="addData.classify"  clearable filterable  >
+
+                        <el-option-group
+                                v-for="group in selects.classifyList"
+                                :key="group.id"
+                                :label="group.name">
+                            <el-option
+                                    v-for="item in group.children"
+                                    :key="item.id"
+                                    :label="item.name"
+                                    :value="item.id">
+                            </el-option>
+                        </el-option-group>
+                    </el-select>
+                </el-form-item>
+                </el-col>
+                <el-col :span="8">
+                    <el-form-item label="别名" prop="alias">
+                        <el-input v-model="addData.alias"></el-input>
+                    </el-form-item>
+                </el-col>
+            </el-row>
+            <el-row>
+                <el-form-item v-if="addData.tabletype == 'SQL'" label="查询SQL" prop="tables">
+                    <el-input type="textarea" v-model="addData.tables"  @blur="compileSQL(addData.tables)"></el-input>
+                </el-form-item>
+            </el-row>
+
+            <el-form-item label="接口描述" prop="remark">
+                <el-input type="textarea" v-model="addData.remark"></el-input>
+            </el-form-item>
+            </el-card>
+            <el-card ><!--卡片-->
+                <el-form-item label="选择字段" prop="keys">
+                    <el-select
+                            v-model="addData.keys"
+                            multiple
+                            collapse-tags
+                            placeholder="请选择字段">
+                        <el-option  v-for="item in selects.fieldList" :key="item" :label="item" :value="item"></el-option>
+                    </el-select>
+                    <span style="margin-left: 20px;color: red;">点击下列字段名称，可设置取数方式, 注意：优先级大于接口传参</span>
+
+                </el-form-item>
+                <el-row>
+                    <el-col v-for="item in addData.keys" :span="8">
+                        <div @click.left="setValue(item)">
+                            <el-form-item  :label="item" prop="item"  :class="addData.setvalue[item]!=null?'add':''">  <!--addData.setvalue-->
+
+                                    <el-select   v-model="addData.verify[item]"
+                                                 placeholder="请选择（输入）正则校验"
+                                                 clearable filterable allow-create  >
+                                        <el-option
+                                                v-for="reg in selects.regxList"
+                                                :key="reg.name"
+                                                :label="reg.name+'['+reg.remark+']'"
+                                                :value="reg.regx">
+                                        </el-option>
+                                    </el-select>
+                               <!-- <i class="el-icon-setting"></i>-->
+                            </el-form-item>
+                        </div>
+                    </el-col>
+                </el-row>
+            </el-card>
+
+            <el-card>
+
+            <el-row>
+                <el-col :span="6">
+                    <el-form-item label="选择权限" prop="roles">
+                        <el-checkbox-group v-model="addData.roles">
+                            <el-row> <el-checkbox label="查询" name="roles"></el-checkbox></el-row>
+                            <el-row> <el-checkbox label="修改" name="roles" :disabled="addData.tabletype!='TABLE'"></el-checkbox></el-row>
+                            <el-row> <el-checkbox label="添加" name="roles" :disabled="addData.tabletype!='TABLE'"></el-checkbox></el-row>
+                            <el-row> <el-checkbox label="删除" name="roles" :disabled="addData.tabletype!='TABLE'"></el-checkbox></el-row>
+                        </el-checkbox-group>
+                    </el-form-item>
+                </el-col>
+                <el-col :span="18">
+                    <el-row >
+                        <template v-if="addData.roles.indexOf('查询')>=0">
+                            <el-col :span="6">
+                                <el-form-item label="无条件查询">
+                                    <el-switch v-model="addData.iscx" active-value="1" inactive-value="0"></el-switch>
+                                </el-form-item>
+                            </el-col>
+                            <el-col :span="9">
+                                <div  @click.left="setHandle('select',addData.front.select,selects.handleConf.front)" >
+                                <el-form-item label="前置Handle" >
+                                    {{showHands(addData.front.select)}}
+                                    <!--<el-select
+                                            :value="showHands(addData.front.select)"
+                                            multiple
+                                            disabled
+                                            collapse-tags
+                                            placeholder="无">
+
+                                        <el-tooltip v-for="(value, key, index) in selects.handleConf.front" class="item" effect="light" :content="value.remark == ''?value.name:value.remark" placement="right">
+                                            <el-option   :key="key" :label="value.name" :value="key"></el-option>
+                                        </el-tooltip>-->
+
+                                    </el-select>
+                                </el-form-item>
+                                </div>
+                            </el-col>
+                            <el-col :span="9">
+                                <div  @click.left="setHandle('select',addData.after.select,selects.handleConf.after)" >
+                                <el-form-item label="后置Handle" >
+                                    {{showHands(addData.after.select)}}
+                                    <!--<el-select
+                                            v-model="addData.after.select"
+                                            multiple
+                                            collapse-tags
+                                            disabled
+                                            placeholder="无">
+                                        <el-tooltip v-for="(value, key, index) in selects.handleConf.after" class="item" effect="light" :content="value.remark == ''?value.name:value.remark" placement="left">
+                                            <el-option   :key="key" :label="value.name" :value="key"></el-option>
+                                        </el-tooltip>
+                                    </el-select>-->
+                                </el-form-item>
+                                </div>
+                            </el-col>
+                        </template>
+                        <template v-else>
+                            不可操作
+                        </template>
+                    </el-row>
+                    <el-row>
+
+                        <template v-if="addData.roles.indexOf('修改')>=0">
+                            <el-col :span="6">
+                                <el-form-item label="无条件修改">
+                                    <el-switch v-model="addData.isxg" active-value="1" inactive-value="0"></el-switch>
+                                </el-form-item>
+                            </el-col>
+                            <el-col :span="9">
+                                <div  @click.left="setHandle('update',addData.front.update,selects.handleConf.front)" >
+                                <el-form-item label="前置Handle" >
+                                    {{showHands(addData.front.update)}}
+                                   <!-- <el-select
+                                            v-model="addData.front.update"
+                                            multiple
+                                            collapse-tags
+                                            disabled
+                                            placeholder="无">
+                                        <el-option  v-for="(value, key, index) in selects.handleConf.front" :key="key" :label="value.name" :value="key"></el-option>
+                                    </el-select>-->
+                                </el-form-item>
+                                </div>
+                            </el-col>
+                            <el-col :span="9">
+                                <div  @click.left="setHandle('update',addData.after.update,selects.handleConf.after)" >
+                                <el-form-item label="后置Handle" >
+                                    {{showHands(addData.after.update)}}
+                                    <!--<el-select
+                                            v-model="addData.after.update"
+                                            multiple
+                                            collapse-tags
+                                            disabled
+                                            placeholder="无">
+                                        <el-option  v-for="(value, key, index) in selects.handleConf.after" :key="key" :label="value.name" :value="key"></el-option>
+                                    </el-select>-->
+                                </el-form-item>
+                                </div>
+                            </el-col>
+                        </template>
+                        <template v-else>
+                            不可操作
+                        </template>
+                    </el-row>
+                    <el-row>
+
+                        <template v-if="addData.roles.indexOf('添加')>=0">
+                            <el-col :span="9">
+                                <div  @click.left="setHandle('insert',addData.front.insert,selects.handleConf.front)" >
+                                <el-form-item label="前置Handle" >
+                                    {{showHands(addData.front.insert)}}
+                                    <!--<el-select
+                                            v-model="addData.front.add"
+                                            multiple
+                                            collapse-tags
+                                            disabled
+                                            placeholder="无">
+                                        <el-option  v-for="(value, key, index) in selects.handleConf.front" :key="key" :label="value.name" :value="key"></el-option>
+                                    </el-select>-->
+                                </el-form-item>
+                                </div>
+                            </el-col>
+                            <el-col :span="9">
+                                <div  @click.left="setHandle('insert',addData.after.insert,selects.handleConf.after)" >
+                                <el-form-item label="后置Handle" >
+                                    {{showHands(addData.after.insert)}}
+                                    <!--<el-select
+                                            v-model="addData.after.add"
+                                            multiple
+                                            collapse-tags
+                                            disabled
+                                            placeholder="无">
+                                        <el-option  v-for="(value, key, index) in selects.handleConf.after" :key="key" :label="value.name" :value="key"></el-option>
+                                    </el-select>-->
+                                </el-form-item>
+                                </div>
+                            </el-col>
+                        </template>
+                        <template v-else>
+                            不可操作
+                        </template>
+                    </el-row>
+                    <el-row>
+
+                        <template v-if="addData.roles.indexOf('删除')>=0">
+                            <el-col :span="6">
+                                <el-form-item label="无条件删除">
+                                    <el-switch v-model="addData.issc" active-value="1" inactive-value="0"></el-switch>
+                                </el-form-item>
+                            </el-col>
+                            <el-col :span="9">
+                                <div  @click.left="setHandle('delete',addData.front.delete,selects.handleConf.front)" >
+
+                                    <el-form-item label="前置Handle"  >
+                                        {{showHands(addData.front.delete)}}
+                                        <!--  <el-select
+                                                  v-model="addData.front.delete"
+                                                  multiple
+                                                  collapse-tags
+                                                  disabled
+                                                  placeholder="无">
+                                              <el-option  v-for="(value, key, index) in selects.handleConf.front" :key="key" :label="value.name" :value="key"></el-option>
+                                          </el-select>-->
+                                  </el-form-item>
+                                </div>
+                            </el-col>
+                            <el-col :span="9">
+                                <div  @click.left="setHandle('delete',addData.after.delete,selects.handleConf.after)" >
+                                    <el-form-item label="后置Handle"  disabled>
+                                        {{showHands(addData.after.delete)}}
+                                        <!--<el-select
+                                                v-model="addData.after.delete"
+                                                multiple
+                                                collapse-tags
+                                                disabled
+                                                placeholder="无">
+                                            <el-option  v-for="(value, key, index) in selects.handleConf.after" :key="key" :label="value.name" :value="key"></el-option>
+                                        </el-select>-->
+                                    </el-form-item>
+                                </div>
+                            </el-col>
+                        </template>
+                        <template v-else>
+                            不可操作
+                        </template>
+                    </el-row>
+
+                </el-col>
+
+            </el-row>
+            <el-form-item v-if="addData.roles.indexOf('查询')>=0" label="查询Field" prop="field">
+                <el-select
+                        v-model="addData.field"
+                        multiple
+                        collapse-tags
+                        placeholder="请选择">
+                    <el-option  v-for="item in selects.fieldList" :key="item" :label="item" :value="item"></el-option>
+                </el-select>
+            </el-form-item>
+            <el-form-item label="wheres" prop="wheres">
+                <el-select
+                        v-model="addData.wheres"
+                        multiple
+                        collapse-tags
+                        placeholder="请选择">
+                    <el-option  v-for="item in addData.keys" :key="item" :label="item" :value="item"></el-option>
+                </el-select>
+            </el-form-item>
+            </el-card>
+
+        </el-form>
+        </div>
+        <div slot="footer" class="dialog-footer">
+            <el-button @click="resetCompany('addData')">重 置</el-button>
+            <el-button type="primary" @click="saveData('addData')">确 定</el-button>
+        </div>
+    </el-dialog>
+
+    <el-dialog title="接口调试" :visible.sync="tiaoshiVisible" width="65%">
+        <el-form :model="addData" ref="addData" :rules="addData_rules" label-width="120px" >
+
+            <el-card>
+                <el-row>
+                    <el-col :span="8">
+                        <el-form-item label="接口名称" prop="alias">
+                            <el-input v-model="tsData.alias" disabled></el-input>
+                        </el-form-item>
+                    </el-col>
+                    <el-col :span="8">
+                        <el-form-item label="说明" prop="alias">
+                            <el-input v-model="tsData.remark" disabled></el-input>
+                        </el-form-item>
+                    </el-col>
+                    <el-col :span="8">
+                        <el-form-item label="权限" prop="alias">
+                            <el-input v-model="tsData.roles" disabled></el-input>
+                        </el-form-item>
+                    </el-col>
+                </el-row>
+                <el-row>
+                    <el-form-item label="校验规则" prop="alias">
+                        <el-input type="textarea" :rows="2" v-model="tsData.verify" disabled></el-input>
+                    </el-form-item>
+                </el-row>
+                <el-row>
+                    <el-form-item label="查询条件" prop="alias">
+                        <el-input type="textarea" :rows="1" v-model="tsData.wheres" disabled></el-input>
+                    </el-form-item>
+                </el-row>
+                <el-row>
+                    <el-form-item label="请求类型" prop="alias">
+                        <template>
+                            <el-radio @input="clickSendType" :disabled="tsData.roles.indexOf('查询')<0"  v-model="send.active" label="getList">getList</el-radio>
+                            <el-radio @input="clickSendType" :disabled="tsData.roles.indexOf('查询')<0"  v-model="send.active" label="getByOne">getByOne</el-radio>
+                            <el-radio @input="clickSendType" :disabled="tsData.roles.indexOf('修改')<0"  v-model="send.active" label="update">update</el-radio>
+                            <el-radio @input="clickSendType" :disabled="tsData.roles.indexOf('添加')<0"  v-model="send.active" label="insert">insert</el-radio>
+                            <el-radio @input="clickSendType" :disabled="tsData.roles.indexOf('删除')<0"  v-model="send.active" label="delete">delete</el-radio>
+                        </template>
+                    </el-form-item>
+                </el-row>
+                <el-row :gutter="20" >
+                    <el-col :span="18">
+                        <el-form-item label="请求参数" prop="alias">
+                            <el-row>
+                                <el-input type="textarea" v-model="tsData.param" :rows="5"></el-input>
+                            </el-row>
+                        </el-form-item>
+                    </el-col>
+                    <el-col :span="6" v-loading="sending">
+                        <el-button  @click="httpPostJson(tsData.alias,send.active,tsData.param)">执行</el-button>
+
+                    </el-col>
+                </el-row>
+
+
+            </el-card>
+            <el-card ><!--卡片-->
+                <el-form-item label="返回结果" prop="remark">
+                    <el-input type="textarea" v-model="tsData.res" :rows="12" ></el-input>
+                </el-form-item>
+            </el-card>
+
+        </el-form>
+
+    </el-dialog>
+
+    <el-dialog title="表单设计" :visible.sync="formConfVisible" width="65%">
+        <template>
+            <el-table
+                    :data="formConf.formConfList"
+                    height="350"
+                    border
+                    style="width: 100%">
+
+                <el-table-column
+                        prop="state"
+                        label="选择"
+                        width="50">
+                    <template slot-scope="scope">
+                        <el-checkbox v-model="scope.row.state"></el-checkbox>
+                    </template>
+
+                </el-table-column>
+
+                <el-table-column
+                        prop="state"
+                        label="位置"
+                        width="50">
+                    <template slot-scope="scope">
+                        <i v-show="scope.$index>0" class="el-icon-top icon" @click="formSort(scope.$index,-1)"></i>
+                        <i v-show="scope.$index<listConf.listConfList.length-1" class="el-icon-bottom icon" @click="formSort(scope.$index,1)"></i>
+                    </template>
+
+                </el-table-column>
+
+                </el-table-column>
+                <el-table-column
+                        prop="field"
+                        label="字段名"
+                        width="120">
+                </el-table-column>
+                <el-table-column
+                        prop="name"
+                        label="别名"
+                        width="120">
+                    <template slot-scope="scope">
+                        <el-input  v-model="scope.row.name" ></el-input>
+                    </template>
+                </el-table-column>
+                <!--<el-table-column
+                        prop="type"
+                        width="120"
+                        label="编辑类型">
+                    <template slot-scope="scope">
+                        <el-select v-model="scope.row.type"  placeholder="请选择编辑类型" >
+                            <el-option  v-for="item in selects.formTypeList" :key="item.value" :label="item.name" :value="item.value"></el-option>
+                        </el-select>
+                    </template>
+                </el-table-column>-->
+
+
+                <el-table-column label="默认值" >
+                    <el-table-column
+                            prop="type"
+                            width="120"
+                            label="类型">
+                        <template slot-scope="scope">
+                            <el-select v-model="scope.row.type"  placeholder="请选择编辑类型" >
+                                <el-option  v-for="item in selects.formTypeList" :key="item.value" :label="item.name" :value="item.value"></el-option>
+                            </el-select>
+                        </template>
+                    </el-table-column>
+                    <el-table-column
+                            prop="param"
+                            label="参数"
+                            minWidth="200">
+                        <template slot-scope="scope">
+                            <set-param v-if="scope.row.type.indexOf('select')>=0" :type="scope.row.type" v-model="scope.row.param"> </set-param>
+                            <!--<el-input type="textarea" v-if="scope.row.type != 'text'" v-model="scope.row.param" ></el-input>-->
+                        </template>
+                    </el-table-column>
+                    <el-table-column
+                            prop="param"
+                            label="默认值"
+                            width="200">
+                        <template slot-scope="scope">
+                            <el-input  v-model="scope.row.default"></el-input>
+                        </template>
+                    </el-table-column>
+                </el-table-column>
+
+                <el-table-column
+                        prop="name"
+                        label="是否必填"
+                        width="110">
+                    <template slot-scope="scope">
+                        <el-switch
+                                v-model="scope.row.required"
+                                active-value="1"
+                                inactive-value="0"
+                                active-color="#13ce66"
+                                inactive-color="#ff4949">
+                        </el-switch>
+                    </template>
+                </el-table-column>
+
+            </el-table>
+        </template>
+        <div slot="footer" class="dialog-footer">
+            <el-button  @click="showFormView()">预览</el-button>
+            <el-button type="primary" @click="saveFormConf()">确 定</el-button>
+        </div>
+
+    </el-dialog>
+
+    <el-dialog title="表单设计预览" :visible.sync="formViewVisible" width="65%">
+        <template>
+            <el-form  ref="formData"  label-width="150px">
+                <el-form-item v-for="item in formConf.formConfList" v-if="item.state" :label="item.name">
+
+                    <!--普通文本-->
+                    <el-input v-if="'textarea,password'.indexOf(item.type)>=0" v-model="formConf.viewdata[item.field]"  :type="item.type" :placeholder="item.field" ></el-input>
+                    <!--下拉选择-->
+                    <el-select v-else-if="item.type=='select'" v-model="formConf.viewdata[item.field]" placeholder="请选择">
+                        <el-option
+                                v-for="d in paramToSelect(item.param)"
+                                :key="d.value"
+                                :label="d.name"
+                                :value="d.value">
+                        </el-option>
+                    </el-select>
+                    <!--下拉选择（接口）-->
+                    <el-select v-else-if="item.type=='select_table'" v-model="formConf.viewdata[item.field]"  placeholder="请选择">
+                        <el-option
+                                v-for="d in paramToSelect(item.param)"
+                                :key="d.value"
+                                :label="d.name"
+                                :value="d.value">
+                        </el-option>
+                    </el-select>
+                    <!--开关-->
+                    <el-switch
+                            v-else-if="item.type=='switch'"
+                            v-model="formConf.viewdata[item.field]"
+                            :active-value="1"
+                            :inactive-value="0"
+                            active-color="#13ce66"
+                            inactive-color="#ff4949">
+                    </el-switch>
+
+                    <el-upload
+                            v-else-if="item.type=='upload'"
+                            class="upload-demo"
+                            drag
+                            action=""
+                            multiple>
+                        <i class="el-icon-upload"></i>
+                        <div class="el-upload__text">将文件拖到此处，或<em>点击上传</em></div>
+                        <div class="el-upload__tip" slot="tip">只能上传jpg/png文件，且不超过500kb</div>
+                    </el-upload>
+
+                </el-form-item>
+
+            </el-form>
+            <div   slot="footer" class="dialog-footer">
+                <el-button >清除</el-button>
+                <el-button type="primary"  >确 定</el-button>
+            </div>
+
+        </template>
+
+    </el-dialog>
+
+    <el-dialog title="列表展示" :visible.sync="listConfVisible" width="65%">
+        <template>
+            <el-table
+                    :data="listConf.listConfList"
+                    height="350"
+                    border
+                    style="width: 100%">
+
+                <el-table-column
+                        prop="state"
+                        label="选择"
+                        width="50">
+                    <template slot-scope="scope">
+                        <el-checkbox v-model="scope.row.state"></el-checkbox>
+                    </template>
+
+                </el-table-column>
+
+                <el-table-column
+                        prop="state"
+                        label="位置"
+                        width="50">
+                    <template slot-scope="scope">
+                        <i v-show="scope.$index>0" class="el-icon-top icon" @click="listSort(scope.$index,-1)"></i>
+                        <i v-show="scope.$index<listConf.listConfList.length-1" class="el-icon-bottom icon" @click="listSort(scope.$index,1)"></i>
+                    </template>
+
+                </el-table-column>
+
+                <el-table-column
+                        prop="state"
+                        label="主键"
+                        width="50">
+                    <template slot-scope="scope">
+                        <el-checkbox v-model="scope.row.pk"></el-checkbox>
+                    </template>
+
+                </el-table-column>
+                <el-table-column
+                        prop="field"
+                        label="字段名"
+                        width="120">
+                </el-table-column>
+                <el-table-column
+                        prop="name"
+                        label="别名"
+                        width="120">
+                    <template slot-scope="scope">
+                        <el-input  v-model="scope.row.name" ></el-input>
+                    </template>
+                </el-table-column>
+                <el-table-column
+                        prop="type"
+                        width="120"
+                        label="编辑类型">
+                    <template slot-scope="scope">
+                        <el-select v-model="scope.row.type"  placeholder="请选择编辑类型" >
+                            <!--<el-option  v-for="item in selects.editTypeList" :key="item" :label="item" :value="item"></el-option>-->
+                            <el-option  v-for="item in selects.formTypeList" :key="item.value" :label="item.name" :value="item.value"></el-option>
+                        </el-select>
+                    </template>
+                </el-table-column>
+                <el-table-column
+                        prop="param"
+                        label="参数"
+                        width="200">
+                    <template slot-scope="scope">
+                        <set-param v-if="scope.row.type.indexOf('select')>=0" :type="scope.row.type" v-model="scope.row.param"> </set-param>
+                      <!--  <el-input type="textarea" v-if="scope.row.type != 'text'" v-model="scope.row.param" ></el-input>-->
+                    </template>
+                </el-table-column>
+                <el-table-column
+                        prop="type"
+                        width="120"
+                        label="align" >
+                    <template slot-scope="scope">
+                        <el-select v-model="scope.row.align"  placeholder="请选择" >
+                            <el-option  label="居中" value="center"></el-option>
+                            <el-option  label="居左" value="left"></el-option>
+                            <el-option  label="居右" value="right"></el-option>
+                        </el-select>
+                    </template>
+                </el-table-column>
+                <el-table-column
+                        prop="width"
+                        label="列宽"
+                        width="100">
+                    <template slot-scope="scope">
+                        <el-input  v-model="scope.row.width" ></el-input>
+                    </template>
+                </el-table-column>
+                <el-table-column
+                        prop="name"
+                        label="允许列表修改"
+                        width="110">
+                    <template slot-scope="scope">
+                        <el-switch
+                                v-model="scope.row.isedit"
+                                active-value="1"
+                                inactive-value="0"
+                                active-color="#13ce66"
+                                inactive-color="#ff4949">
+                        </el-switch>
+                    </template>
+                </el-table-column>
+                <el-table-column label="筛选条件" >
+                    <el-table-column
+                            prop="name"
+                            label="筛选条件"
+                            width="315">
+                        <template slot-scope="scope">
+                            <el-radio-group v-model="scope.row.screen" size="medium">
+                                <el-radio border label="0">停用</el-radio>
+                                <el-radio border label="1">精准</el-radio>
+                                <el-radio border label="2">模糊</el-radio>
+                                <el-radio border label="3">IN</el-radio>
+                            </el-radio-group>
+                        </template>
+                    </el-table-column>
+                    <el-table-column
+                            prop="width"
+                            label="默认值"
+                            width="100">
+                        <template slot-scope="scope">
+                            <el-input  v-model="scope.row.wherevalue" ></el-input>
+                        </template>
+                    </el-table-column>
+
+                </el-table-column>
+            </el-table>
+        </template>
+        <div slot="footer" class="dialog-footer">
+            <el-button v-if="listConf.param.isForm == 1" type="primary" @click="formConfVisible_show(listConf.row)">表单设置</el-button>
+            <el-button type="primary" @click="setListConfParam()">列表属性</el-button>
+            <el-button type="primary" @click="saveListConf()">确 定</el-button>
+        </div>
+
+    </el-dialog>
+
+    <el-dialog title="导入配置文件" :visible.sync="importconfVisible" width="450px">
+        <el-upload
+                class="upload-demo"
+                action="interface/importConf"
+                :on-error="importConf_error"
+                :on-success="importConf_success"
+                :file-list="fileList">
+            <el-button size="small" type="primary">点击上传</el-button>
+            <div slot="tip" class="el-upload__tip">只能上传json文件，且不超过500kb</div>
+        </el-upload>
+    </el-dialog>
+
+    <el-dialog title="设置取值" :visible.sync="setValueVisible" width="500px">
+        <el-form :model="setValueForm" ref="setValueForm" >
+        <el-row>
+            <el-col :span="12"><span>当前字段：{{setValueField}}</span></el-col>
+            <el-col :span="12">
+                <el-switch
+                        v-model="setValueForm.isnull"
+                        active-value="1"
+                        inactive-value="0"
+                        active-text="允许空值"></el-switch>
+            </el-col>
+        </el-row>
+
+        <div style="margin-top: 10px;">
+            <el-input placeholder="取值变量" v-model="setValueForm.field" class="input-with-select">
+                <el-select v-model="setValueForm.type" slot="prepend" placeholder="请选择取值方式" style="width: 130px">
+                    <el-option  v-for="item in selects.setValueTypeList" :key="item" :label="item" :value="item"></el-option>
+                </el-select>
+                <template slot="append">
+                    <el-checkbox-group v-model="setValueForm.roles">
+                        <el-checkbox label="where" name="roles3"></el-checkbox>
+                        <el-checkbox label="set_data" name="roles3" :disabled="addData.tabletype!='TABLE'"></el-checkbox>
+                    </el-checkbox-group>
+
+                </template>
+
+            </el-input>
+        </div>
+        </el-form>
+        <div slot="footer" class="dialog-footer">
+            <el-button @click="removeSetValueForm()">清除</el-button>
+            <el-button type="primary" @click="saveSetValueForm()">确 定</el-button>
+        </div>
+    </el-dialog>
+
+
+    <el-dialog title="设置Handle" :visible.sync="setHandleVisible" width="600px">
+        <el-form :model="setHandleData.data" ref="setValueForm" >
+            <el-row>
+                <el-button @click="setHandleData.data.push({})">添加Handle</el-button>
+            </el-row>
+
+            <div style="margin-top: 10px;">
+
+                <el-row v-for="(v, i) in setHandleData.data" :gutter="5">
+                    <el-form-item>
+                        <el-col :span="11">
+                            <el-select
+                                    v-model="v.name"
+                                    placeholder="请选择">
+                                <el-option v-if="value.type.indexOf(setHandleData.type)>=0" v-for="(value, key, index) in setHandleData.select" :key="key" :label="value.name" :value="key"></el-option>
+                            </el-select>
+                            <el-tooltip v-if="v.name!=null" :content="setHandleData.select[v.name].remark" placement="right" effect="light">
+                                <i class="el-icon-warning-outline"></i>
+                            </el-tooltip>
+                        </el-col>
+                        <el-col :span="10">
+                            <el-input v-model="v.param" placeholder="参数"></el-input>
+                        </el-col>
+                        <el-col :span="3">
+                                <el-button type="primary" @click="setHandleData.data.splice(i,1)" >删除</el-button>
+                        </el-col>
+                    </el-form-item>
+                </el-row>
+
+            </div>
+        </el-form>
+        <div slot="footer" class="dialog-footer">
+            <el-button type="primary" @click="setHandleVisible=false">确定</el-button>
+        </div>
+    </el-dialog>
+
+
+    <el-dialog title="列表属性设置" :visible.sync="listConfParamVisible" width="600px">
+        <div style="height: 300px;overflow: auto">
+            <el-form :model="listConf.param" ref="setValueForm" label-width="80px">
+
+                <el-card>
+                    <div slot="header" class="clearfix">
+                        <span>排序规则</span>
+                        <el-button style="float: right; padding: 3px 0" type="text" @click="listConf.param.orderby.push({})">添加</el-button>
+                      <!--  <el-button style="float: right; padding: 3px 0" type="text">操作按钮</el-button>-->
+                    </div>
+                    <el-row v-for="(v, i) in listConf.param.orderby" :gutter="5">
+                        <el-form-item>
+                            <el-col :span="11">
+                                <el-select
+                                        v-model="v.name"
+                                        placeholder="请选择">
+                                    <el-option   v-for="(value, index) in listConf.listConfList" :key="value.field" :label="value.field" :value="value.field"></el-option>
+                                </el-select>
+                            </el-col>
+                            <el-col :span="10">
+                                <!--<el-input v-model="v.type" placeholder="参数"></el-input>-->
+                                <template>
+                                    <el-radio v-model="v.type" label="ASC">正序</el-radio>
+                                    <el-radio v-model="v.type" label="DESC">倒序</el-radio>
+                                </template>
+                            </el-col>
+                            <el-col :span="3">
+                                <el-button type="primary" @click="listConf.param.orderby.splice(i,1)" >删除</el-button>
+                            </el-col>
+                        </el-form-item>
+                    </el-row>
+                </el-card>
+                <el-card>
+                    <el-row>
+                        <el-col :span="12">
+                            <el-form-item label="启用表单">
+                                <el-switch  v-model="listConf.param.isForm" active-value='1' inactive-value='0'
+                                            active-color="#13ce66" inactive-color="#ff4949">
+                                </el-switch>
+                            </el-form-item>
+                        </el-col>
+                        <el-col :span="12">
+                            <el-form-item label="表单列数">
+                                <el-input v-model="listConf.param.formcol" type="number" max="5" min="1" style="width:100px"></el-input>
+                            </el-form-item>
+                        </el-col>
+                    </el-row>
+                    <el-row>
+                        <el-form-item label="表单样式">
+                            <el-input v-model="listConf.param.formstyle"></el-input>
+                        </el-form-item>
+                    </el-row>
+                </el-card>
+            </el-form>
+        </div>
+        <div slot="footer" class="dialog-footer">
+            <el-button type="primary" @click="listConfParamVisible=false">确定</el-button>
+        </div>
+
+    </el-dialog>
+
+
+
+</div>
+</body>
+<!-- import Vue before Element -->
+<script>
+
+    function sendHttpPost(url,data,callback){
+        $.ajax({
+            url: url,
+            headers: { "Content-Type": "application/json" },
+            type: 'POST',
+            dataType: 'json',
+            data: JSON.stringify(data),
+            success: function (d) {
+                if(callback!=null) callback(d);
+            },
+            error: function (e) {console.log(e)}
+        });
+    }
+
+</script>
+
+<script>
+    var app = new Vue({
+        el: '#app',
+        components: {
+            'set-param': httpVueLoader('components/set_param.vue'),
+        },
+        data: function() {
+            return {
+                sending:false,
+                setValueVisible: false,
+                setHandleVisible: false,
+                addDataVisible: false,
+                tiaoshiVisible: false,
+                importconfVisible: false,
+                listConfVisible: false,
+                listConfParamVisible: false,
+                formConfVisible: false,
+                formViewVisible: false,
+                setValueField:null,
+                setValueForm:{roles:[],type:"Param"},
+                addData:{tabletype:'TABLE',setvalue:{},verify:{},roles:[],after:{},front:{}},
+                tsData:{roles:""},
+                addData_rules:{},
+                tableData:[],
+                fileList:[],
+                setHandleData:{type:"",data:[],select:[]},
+                listConf:{
+                    row: {},
+                    param: {orderby:[]},
+                    listConfList:[]
+                }
+                ,formConf:{
+                    row: {},
+                    formConfList:[],
+                    viewdata:{}
+                },
+                selectDatas:[],
+                selects:{
+                    classId:null,
+                    state:"1",
+                    dynamic:{
+                        list:{},
+                        map:{}
+                    },
+                    handleConf:{},
+                    tableList:[],
+                    formTypeList:[{"name":"单行文本","value":"text"},{"name":"多行文本","value":"textarea"},{"name":"富文本","value":"editor"},{"name":"密码框","value":"password"}
+                                ,{"name":"下拉选择","value":"select"},{"name":"下拉选择(宽)","value":"select_big"},{"name":"单选","value":"radio"},{"name":"多选","value":"checkbox"}
+                                ,{"name":"开关","value":"switch"},{"name":"时间选择","value":"datetime"},{"name":"上传","value":"upload"}],
+                    editTypeList:["text","select","switch","html"],
+                    setValueTypeList:["Param","Attr","Header","Cookie","Sql"],
+                    tableTypeList:[{"name":"表","value":"TABLE"},{"name":"视图","value":"VIEW"},{"name":"自定义报表","value":"SQL"}],
+                    classifyList:[],
+                    classifyMap:{},
+                    //classifyList:[{"id":"1","name":"分组一","children":[{"id":"101","name":"分组101","children":[]},{"id":"102","name":"分组102","children":[]}]},{"id":"2","name":"分组二","children":[{"id":"201","name":"分组201","children":[]},{"id":"202","name":"分组202","children":[]}]}],
+                    fieldList:[],
+                    regxList:[]
+                },
+                rules:{
+                    tabletype: [{ required: true, message: '当前为必填项', trigger: 'blur' }],
+                    tables: [{ required: true, message: '当前为必填项', trigger: 'blur' }],
+                    classify: [{ required: true, message: '当前为必填项', trigger: 'blur' }],
+                    alias: [{ required: true, message: '当前为必填项', trigger: 'blur' }],
+                    remark: [{ required: true, message: '当前为必填项', trigger: 'blur' }],
+                    keys: [{ required: true, message: '当前为必填项', trigger: 'blur' }],
+                    field: [{ required: true, message: '当前为必填项', trigger: 'blur' }],
+                    wheres: [{ required: true, message: '当前为必填项', trigger: 'blur' }],
+
+                },
+                send:{
+                    list:{"getList":"","getByOne":"","update":"","insert":"","delete":""},
+                    active:'getList',
+                }
+            }
+        },
+        methods:{
+            logout(){
+                var that = this;
+                this.$confirm('确认退出当前登录?', '提示', {
+                    confirmButtonText: '确定',
+                    cancelButtonText: '取消',
+                    type: 'warning'
+                }).then(() => {
+                    $.ajax({
+                        url: "interface/logout",
+                        // headers: { "Content-Type": "application/json" },
+                        type: 'POST',
+                        dataType: 'json',
+                        data: {},
+                        success: function (res) {
+                            that.$message({message: res.message, type: 'success'});
+                            if(res.code = "0000"){
+                                window.location.href="interface/admin/manage.html";
+                            }
+                        },
+                        error: function (e) {
+                            that.$message("接口请求异常！")
+                            console.log(e);
+                            that.sending = false;
+                        }
+                    });
+                });
+
+            },
+            tableRowClassName({row, rowIndex}) {
+                if (row.roles == null) {
+                    return 'warning-row';
+                }
+                return '';
+            },
+            listSort(index,i){
+                var index2 = index+i;
+                var x = this.listConf.listConfList[index];
+                var y = this.listConf.listConfList[index2];
+                this.$set(this.listConf.listConfList,index,y);
+                this.$set(this.listConf.listConfList,index2,x);
+               // console.log(list);
+            },
+            formSort(index,i){
+                var index2 = index+i;
+                var x = this.formConf.formConfList[index];
+                var y = this.formConf.formConfList[index2];
+                this.$set(this.formConf.formConfList,index,y);
+                this.$set(this.formConf.formConfList,index2,x);
+                // console.log(list);
+            },
+            showHands(data){
+                console.log("showHands",data)
+                return '('+data.length+')';
+               /* var list = [];
+                for(var i in data){
+                    var d = data[i];
+                    list.push(d.name)
+                }
+                return list;*/
+            },
+            //设置Handle
+            setHandle(type,data,select){
+                this.setHandleData = {type:type,data:data,select:select}
+                this.setHandleVisible = true;
+                console.log('setHandleData',this.setHandleData)
+            },
+            //表单内Param数据转换方法
+            paramToSelectTable(str){
+                var that = this;
+                var pjson = JSON.parse(str)
+                var table = pjson.table;
+                var name = pjson.name;
+                var value = pjson.value;
+
+                var new_list = that.selects.dynamic.list[table];
+                if(new_list == null){
+                    var where = pjson.where;
+                    if(where == null) where = {}
+                    var response = kuai.conf({async:false}).getList(table,where)
+                    var list = response.list
+                    new_list = [];
+                    for(var i2 in list){
+                        var l2 = list[i2];
+                        new_list.push({name:l2[name],value:l2[value]})
+                    }
+                    that.selects.dynamic.list[table] = new_list;
+                }
+
+                return new_list;
+            },
+            paramToSelect(str){
+                var that = this;
+                var pjson = JSON.parse(str)
+
+                var data = pjson.data;
+                var extend = pjson.extend
+                if(extend!=null){
+                    var table = extend.table;
+                    var name = extend.name;
+                    var value = extend.value;
+                    var new_list = that.selects.dynamic.list[table];
+                    if(new_list == null){
+                        var where = extend.where;
+                        if(where == null) where = {}
+                        var response = kuai.conf({async:false}).getList(table,where)
+                        var list = response.list
+                        new_list = [];
+                        for(var i2 in list){
+                            var l2 = list[i2];
+                            new_list.push({name:l2[name],value:l2[value]})
+                        }
+                        that.selects.dynamic.list[table] = new_list;
+                    }
+                    new_list.forEach(function(d){
+                        data.push(d)
+                    })
+                }
+
+                return data;
+            },
+            //表单设置
+            showFormView(){
+                this.formViewVisible = true;
+            },
+            formConfVisible_show(row){
+                this.formConf.row = row;
+                var str = row.formconf;
+                var formconf = str!=null?JSON.parse(str):[];//[{"state":true,"pk":false,"field":'操作',"name":"操作","type":"html","screen":"0","isedit":"0","align":"center"}];
+
+                var kks = row.keys.split(",")
+
+               for(var i in formconf){
+                   var kkk = formconf[i]
+                   var index = kks.indexOf(kkk.field);
+                   if(index>=0){
+                       kks.splice(0, 1);
+                   }
+               }
+
+                for(var i in kks){
+                    var kkk = kks[i]
+                    formconf.push({"state":true,"field":kkk,"name":"","type":"text","required":"0","isedit":"0"})
+                }
+
+                this.formConf.formConfList = formconf;
+                this.formConfVisible = true;
+            },
+            saveFormConf(){
+                var row = this.formConf.row;
+                var saveData = {"id":row.id,"formconf":JSON.stringify(this.formConf.formConfList)};
+                this.addIFConfig(saveData);
+                this.formConfVisible = false;
+            },
+            //列表设置
+            listConfVisible_show(row){
+                this.listConf.row = row;
+                var str = row.listconf;
+                var listconf = str!=null?JSON.parse(str):{param:{orderby:[]},list:[]};//[{"state":true,"pk":false,"field":'操作',"name":"操作","type":"html","screen":"0","isedit":"0","align":"center"}];
+
+                if(listconf instanceof Array){//兼容以前设置
+                    listconf = {param:{orderby:[]},list:listconf}
+                }
+
+                var listconf_list = listconf.list;
+
+                var kks = row.keys.split(",")
+
+                for(var i in listconf_list){
+                    var kkk = listconf_list[i]
+                    var index = kks.indexOf(kkk.field);
+                    if(index>=0){
+                        kks.splice(0, 1);
+                    }
+                }
+
+                for(var i in kks){
+                    var kkk = kks[i]
+                    listconf_list.push({"state":true,"pk":false,"field":kkk,"name":"","type":"text","screen":"0","isedit":"0","align":"center"})
+                }
+
+                this.listConf.listConfList = listconf_list;
+                this.listConf.param = listconf.param;
+                this.listConfVisible = true;
+            },
+            setListConfParam(){//列表附属信息设置
+                this.listConfParamVisible = true;
+            },
+            saveListConf(){
+                var row = this.listConf.row;
+                var saveData = {"id":row.id,"listconf":JSON.stringify({param:this.listConf.param,list:this.listConf.listConfList})};
+                this.addIFConfig(saveData);
+                this.listConfVisible = false;
+            },
+            //------------------设置取值------------------
+            setValue(f){
+                this.setValueVisible = true;
+                this.setValueField = f;
+                var form = this.addData.setvalue[f];
+                /*var form = {roles:[]};
+                if(setvalue!=null&& setvalue!=""){
+                    var vvv = JSON.parse(setvalue)[f];
+                    if(vvv!=null) form = vvv;
+                }*/
+                this.setValueForm = form == null?{roles:[],type:"Param"}:form;
+            },
+            saveSetValueForm(){
+                var ff = this.setValueField;
+                this.addData.setvalue[ff] = this.setValueForm;
+                this.setValueForm = {roles:[],type:"Param"};
+                this.setValueVisible = false;
+            },
+            removeSetValueForm(){
+                var ff = this.setValueField;
+                delete this.addData.setvalue[ff];
+                this.setValueVisible = false;
+            },
+            handleSelectionChange(value){
+                this.selectDatas = value;
+            },
+            batch_delete(){//批量删除操作
+                var that = this;
+                var list = this.selectDatas;
+                var ids = "";
+                if(list.length==0){
+                    this.$message("请先选择删除的数据！！")
+                    return;
+                }
+
+                for(var i in list){
+                    var d = list[i];
+                    var state = d.state;
+                    var id = d.id
+                    if(state>0){
+                        this.$message("仅可删除停用状态的数据！");
+                        return;
+                    }else{
+                        ids += ","+id;
+                    }
+                }
+
+
+                this.$confirm('此操作将永久删除这些记录, 是否继续?', '提示', {
+                    confirmButtonText: '确定',
+                    cancelButtonText: '取消',
+                    type: 'warning'
+                }).then(() => {
+
+                    $.ajax({
+                        url: 'interface/batchDelete',
+                        headers: { "Content-Type": "application/json" },
+                        type: 'POST',
+                        dataType: 'json',
+                        data: JSON.stringify({"id":ids.substr(1)}),
+                        success: function (d) {
+                            if(d.code == '1'){
+                                //操作成功
+                                var classid = that.selects.classId;
+                                that.findIFConfigList();
+                               // that.addDataVisible = false;
+                               // that.findIFConfigList();
+                            }
+                            that.$message(d.message)
+                        },
+                        error: function (e) {console.log(e)}
+                    });
+
+
+
+                    this.$message({
+                        type: 'success',
+                        message: '删除成功!'
+                    });
+                }).catch(() => {
+                    this.$message({
+                        type: 'info',
+                        message: '已取消删除'
+                    });
+                });
+
+
+            },
+            showData(data){
+                var ks = ['keys','roles','wheres','field'];
+                var dd = {tabletype:'TABLE',setvalue:{},verify:{},roles:[],after:{select:[],insert:[],update:[],delete:[]},front:{select:[],insert:[],update:[],delete:[]}};
+                for(var k in data){
+                    if(ks.indexOf(k)>=0){
+                        dd[k.toLowerCase()] = data[k].split(",");
+                    }else if('setvalue,verify,after,front'.indexOf(k)>=0){
+                        var v = data[k];
+                        dd[k.toLowerCase()] = JSON.parse(v == null?"{}":v);
+                    }else{
+                        dd[k.toLowerCase()] = data[k];
+                    }
+                }
+                console.log(JSON.stringify(dd))
+                this.addData = dd;
+                var tables = dd.tables;
+                if(tables!=null&&tables!=""){
+                    this.compileSQL(tables)
+                }
+                this.addDataVisible = true;
+            },showTs(d){
+                var param = {
+                    "XXXX":{"=":"XXXX"}
+                };
+                this.send.active = "getList";
+                this.tsData = {"alias":d.alias,"roles":d.roles,"setvalue":d.setvalue,"verify":d.verify,"wheres":d.wheres,"remark":d.remark,"param":JSON.stringify(param,null,4)}
+                this.tiaoshiVisible = true;
+            },
+            clickSendType(){
+                 var act = this.send.active;
+                 var param = this.tsData.param;
+                 var jp = JSON.parse(param);
+
+                 if("update".indexOf(act)>=0){//更新操作
+                     jp.SET_DATA = {"XXX": ""}
+                 }else if("insert".indexOf(act)>=0){
+                     jp = {SET_DATA:{"XXX": ""}}
+                 }else{
+                     jp = {"XXXX":{"=":"XXXX"}}
+                     //delete jp.SET_DATA
+                 }
+                this.tsData.param = JSON.stringify(jp,null,4)
+            },
+            openSelect(d){
+                window.open("interface/admin/statement.html?alias="+d.alias);
+            },
+            sync(){
+                var that = this;
+                $.post("interface/sync",{},function (d) {
+                    that.$message(d.message)
+                },"json")
+            },
+            saveData(formName){
+
+                var that = this;
+                this.$refs[formName].validate((valid) => {
+                    if (valid) {
+
+                        var data = that.addData;
+                        console.log(JSON.stringify(data));  //alias
+                        var ks = ['keys','roles','wheres','field'];
+                        var saveData = {};
+                        for(var k in data){
+                            if(ks.indexOf(k)>=0){
+                                saveData[k.toLowerCase()] = data[k].join(",");
+                            }else if('setvalue,verify,after,front'.indexOf(k)>=0){
+                                saveData[k.toLowerCase()] = JSON.stringify(data[k]);
+                            }else{
+                                saveData[k.toLowerCase()] = data[k];
+                            }
+                        }
+                        console.log(JSON.stringify(saveData));
+                        that.addIFConfig(saveData);
+
+                    } else {
+                        console.log('error submit!!');
+                        that.addDataVisible = true;
+                        return false;
+                    }
+                });
+
+
+
+            },updateState(d){
+                var update = {"id":d.id,"state":d.state}
+                this.addIFConfig(update);
+            },
+            findTables(){
+                var that = this;
+                $.post("interface/findTables",{},function (d) {
+                    that.selects.tableList = d;
+                },"json")
+            },
+            /*findColumns(tableName){
+                var that = this;
+                $.post("interface/findColumns",{"tableName":tableName},function (d) {
+                    that.selects.fieldList = d;
+                },"json")
+            },*/
+            compileSQL(sql){
+                var that = this;
+                $.post("interface/compileSQL",{"sql":sql},function (d) {
+                    if(d.code == '0000'){
+                        that.selects.fieldList = d.list;
+                    }else{
+                        that.$message(d.message)
+                    }
+
+                },"json")
+            },
+            addIFConfig(data){
+                var that = this;
+                $.ajax({
+                    url: 'interface/addIFConfig',
+                    headers: { "Content-Type": "application/json" },
+                    type: 'POST',
+                    dataType: 'json',
+                    data: JSON.stringify(data),
+                    success: function (d) {
+                        if(d.code == '1'){
+                            //操作成功
+                            that.addDataVisible = false;
+                            that.findIFConfigList();
+                        }
+                        that.$message(d.message)
+                    },
+                    error: function (e) {console.log(e)}
+                });
+            },
+            findIFConfigByClassify(d){
+                this.selects.classId = d.id;
+                this.findIFConfigList();
+            },
+            findIFConfigList(data){
+                data = data == null?{}:data;
+                var that = this;
+                var state = that.selects.state;
+                var classid = that.selects.classId;
+                data.state = state;
+                data.classify = classid;
+
+                var classifyMap = that.selects.classifyMap;
+
+                $.ajax({
+                    url: 'interface/findIFConfigList',
+                    headers: { "Content-Type": "application/json" },
+                    type: 'POST',
+                    dataType: 'json',
+                    data: JSON.stringify(data),
+                    success: function (d) {
+
+                        var list = d;
+                        var newmap = {};
+                        var new_list = [];
+                        for(var i in list){
+                            var ddd = list[i];
+                            var classify = ddd.classify;
+                            var nd = newmap[classify];
+                            if(nd == null){
+                                nd = {id:classify,remark:classifyMap[classify],children:[]}
+                                newmap[classify] = nd;
+                            }
+                            nd.children.push(ddd);
+                        }
+
+                        for(var i in newmap){
+                            new_list.push(newmap[i]);
+                        }
+                        console.log("new_list:",new_list)
+
+                        that.tableData = new_list;
+                    },
+                    error: function (e) {console.log(e)}
+                });
+
+            },
+            findKuaiConfig(){
+                var that = this;
+                $.ajax({
+                    url: 'interface/findKuaiConfig',
+                    type: 'POST',
+                    dataType: 'json',
+                    success: function (d) {
+                        that.selects.classifyList = d.classifyList;
+                        that.selects.regxList = d.regxList
+                        var  classifyMap = {};
+                        that.treeListToMap(d.classifyList,classifyMap,'id','name','children');
+                        that.selects.classifyMap = classifyMap;
+                        console.log("classifyMap:"+JSON.stringify(classifyMap));
+                        that.findIFConfigList();
+                    },
+                    error: function (e) {console.log(e)}
+                });
+            },treeListToMap(list,map,k,v,c){
+                for(var i in list){
+                    var ll = list[i];
+                    map[ll[k]] = ll[v];
+                    var list_c = ll[c];
+                    if(list_c !=null){
+                        this.treeListToMap(list_c,map,k,v,c);
+                    }
+                }
+            },
+            getCurdHandle(){
+                var that = this;
+                $.ajax({
+                    url: 'interface/getCurdHandle',
+                    headers: { "Content-Type": "application/json" },
+                    type: 'POST',
+                    dataType: 'json',
+                    data: JSON.stringify({}),
+                    success: function (d) {
+                        that.selects.handleConf = d.data;
+                    },
+                    error: function (e) {console.log(e)}
+                });
+
+            },httpPostJson(alias,method,data){
+                var that = this;
+                that.sending = true;
+                $.ajax({
+                    url: "middle/"+alias+"/"+method,
+                    headers: { "Content-Type": "application/json" },
+                    type: 'POST',
+                    dataType: 'json',
+                    data: data,
+                    success: function (res) {
+                        that.$message({message: '操作成功', type: 'success'});
+                        that.tsData.res = JSON.stringify(res,null, 4)
+                        that.sending = false;
+                    },
+                    error: function (e) {
+                        that.$message("接口请求异常！")
+                        console.log(e);
+                        that.sending = false;
+                    }
+                });
+            },upload(){
+
+            },download(){
+                this.$message("正在导出请稍后...")
+                kuai.form_submit("/Kuai/interface/downloadConf",{});
+            },
+            //----导入配置相关的代码---------
+            importConf_success(file, fileList) {
+                console.log("导入成功",file, fileList);
+                this.$message("导入成功");
+                this.importconfVisible = false;
+                this.findIFConfigList();
+            },
+            importConf_error(file) {
+                console.log("导入失败",file);
+                this.$message("导入失败");
+            }
+        },
+        created(){
+            this.findKuaiConfig();
+           // this.findIFConfigList();
+            this.findTables();
+            this.getCurdHandle();
+        }
+    })
+</script>
+</html>
+<script>
+   /* import Company from "../../../../../../kuai-admin/src/views/table/company";
+    export default {
+        components: {Company}
+    }*/
+</script>
