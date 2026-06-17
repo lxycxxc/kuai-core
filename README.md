@@ -1,7 +1,19 @@
----
-title: 快速开始
-date: 2025-01-10 10:00
----
+<p align="center">
+    <strong>面向数据编程框架</strong>
+</p>
+
+<p align="center">
+    <a> <img alt="" src="https://img.shields.io/github/license/lxycxxc/kuai-core?style=flat"/> </a>
+    <a target="_blank" href="https://www.oracle.com/java/technologies/javase/javase-jdk8-downloads.html">
+        <img src="https://img.shields.io/badge/JDK-8+-green.svg" /></a>    
+<a> <img alt="" src="https://img.shields.io/github/stars/lxycxxc/kuai-core?color=fa6470&style=flat"/> </a>
+    <a> <img alt="" src="https://img.shields.io/github/forks/lxycxxc/kuai-core?style=flat"/> </a>
+</p>
+
+<p align="center">
+    <a href="https://qm.qq.com/q/xDcg0KmjhC">
+    <img alt="" src="https://img.shields.io/badge/QQ-298329125-blue"/></a>
+</p>
 
 ## 引用jar包
 ::: info 提示
