@@ -1,6 +1,6 @@
 spring:
   datasource:
     driver-class-name: oracle.jdbc.OracleDriver
-    url: jdbc:oracle:thin:@xxx.xxx.org:1521:ORCL
+    url: jdbc:oracle:thin:@xxx.xxx.xxx:1521:ORCL
     username: xxx
     password: xxx
